@@ -9,7 +9,7 @@ import { useMe } from "@/shared/hooks/useMe";
 import { updateUser } from "@/shared/api-services/users";
 import ChangePasswordModal from "@/shared/components/ChangePasswordModal";
 
-/* ===== helpers ===== */
+/* utils */
 function formatBirthDate(iso?: string) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -37,7 +37,7 @@ function splitFullName(full: string) {
   return { firstName, lastName };
 }
 
-/* ===== role mappings ===== */
+/* role mapping */
 const ROLE_UI_TO_API: Record<string, "admin" | "user"> = {
   Администратор: "admin",
   Пользователь: "user",
@@ -73,7 +73,6 @@ export default function ProfilePage() {
     birthRu: initialBirthRu,
   });
   const [role, setRole] = useState<string>(initialRoleUi);
-
   const [saving, setSaving] = useState(false);
   const [roleSaving, setRoleSaving] = useState(false);
   const [openPwd, setOpenPwd] = useState(false);
@@ -103,9 +102,7 @@ export default function ProfilePage() {
         payload.firstName = firstName;
         payload.lastName = lastName;
       }
-      if (form.email !== initialEmail) {
-        payload.email = form.email;
-      }
+      if (form.email !== initialEmail) payload.email = form.email;
       if (form.birthRu !== initialBirthRu && form.birthRu) {
         const iso = toIsoFromRu(form.birthRu);
         if (!iso) {
@@ -114,11 +111,6 @@ export default function ProfilePage() {
           return;
         }
         payload.birthDate = iso;
-      }
-
-      if (Object.keys(payload).length === 0) {
-        setSaving(false);
-        return;
       }
 
       await updateUser(me.id, payload);
@@ -131,7 +123,7 @@ export default function ProfilePage() {
     }
   }
 
-  // ===== роль: авто-сейв, не влияет на кнопку =====
+  // роль — автосейв
   async function onChangeRole(e: React.ChangeEvent<HTMLSelectElement>) {
     if (!me?.id) return;
     const prevRoleUi = role;
@@ -141,7 +133,7 @@ export default function ProfilePage() {
     setRole(nextRoleUi);
     try {
       setRoleSaving(true);
-      await updateUser(me.id, { role: nextRoleApi });
+      await updateUser(me.id, { role: nextRoleApi } as any);
       toast.success("Роль обновлена");
       await qc.invalidateQueries({ queryKey: ["me"] });
     } catch (err: any) {
@@ -155,66 +147,51 @@ export default function ProfilePage() {
   const rolePill = role || "Пользователь";
 
   return (
-    <div>
-      {/* ===== Шапка профиля ===== */}
-      <section className="rounded-2xl bg-white border border-[#E6EAF2] p-6 sm:p-8 lg:p-9 shadow-sm">
-        <div className="flex items-start gap-5 sm:gap-7">
-          <div className="shrink-0">
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt={form.fullName}
-                width={104}
-                height={104}
-                className="rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-[104px] h-[104px] rounded-full bg-[#C6DCFF] grid place-items-center text-[#0F62FE] text-2xl font-semibold">
-                {form.fullName
-                  .split(" ")
-                  .map((w) => w?.[0])
-                  .filter(Boolean)
-                  .join("")
-                  .slice(0, 2)}
-              </div>
-            )}
-          </div>
+    <div className="space-y-7 sm:space-y-9">
+      {/* ===== DESKTOP HEADER (как было: слева-направо, НЕ по центру) ===== */}
+      <section className="hidden sm:block rounded-2xl bg-white border border-[#E6EAF2] p-8 shadow-sm">
+        <div className="flex items-start gap-6">
+          {/* avatar */}
+          {avatarUrl ? (
+            <Image src={avatarUrl} alt={form.fullName} width={96} height={96} className="rounded-full object-cover" />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-[#C6DCFF] grid place-items-center text-[#0F62FE] text-xl font-bold">
+              {form.fullName.split(" ").map(w=>w?.[0]).filter(Boolean).join("").slice(0,2)}
+            </div>
+          )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-3">
+          {/* text block, left aligned */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
               <span
                 className={
                   rolePill === "Администратор"
-                    ? "inline-block text-xs sm:text-[13px] px-2.5 py-1 rounded-full bg-[#FFF2C6] text-[#8F5A00]"
-                    : "inline-block text-xs sm:text-[13px] px-2.5 py-1 rounded-full bg-[#EAF3FF] text-[#0F62FE]"
+                    ? "inline-block text-xs px-3 py-1 rounded-full bg-[#FFF2C6] text-[#8F5A00]"
+                    : "inline-block text-xs px-3 py-1 rounded-full bg-[#EAF3FF] text-[#0F62FE]"
                 }
               >
                 {rolePill}
               </span>
 
+              {/* ссылка “Изменить пароль” справа */}
               <button
                 onClick={() => setOpenPwd(true)}
-                className="ml-auto text-[#0F62FE] text-[13px] sm:text-sm hover:underline"
+                className="ml-auto text-[#0F62FE] hover:underline"
               >
                 Изменить пароль
               </button>
             </div>
 
-            <h1 className="mt-1 text-[28px] sm:text-[30px] lg:text-[32px] leading-tight font-semibold text-ink">
-              {form.fullName}
-            </h1>
+            <h1 className="text-[24px] font-semibold mt-2">{form.fullName}</h1>
 
-            {form.email && (
-              <a
-                href={`mailto:${form.email}`}
-                className="text-[14px] sm:text-[15px] text-[#0F62FE] break-all inline-block mt-1"
-              >
+            {!!form.email && (
+              <a href={`mailto:${form.email}`} className="text-[#0F62FE] block mt-1">
                 {form.email}
               </a>
             )}
 
             {me?.birthDate && (
-              <div className="text-[13px] sm:text-sm text-gray-600 mt-1">
+              <div className="text-gray-600 mt-1">
                 {formatBirthDate(me.birthDate)}
                 {age !== undefined ? ` (${age} лет)` : ""}
               </div>
@@ -223,12 +200,56 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      {/* ===== Личные данные ===== */}
-      <section className="rounded-2xl bg-white border border-[#E6EAF2] p-6 sm:p-8 lg:p-9 shadow-sm mt-7 sm:mt-9">
+      {/* ===== MOBILE HEADER (вертикально по центру, шрифт крупнее) ===== */}
+      <section className="sm:hidden rounded-2xl bg-white border border-[#E6EAF2] p-6 shadow-sm">
+        <div className="flex flex-col items-center text-center gap-3 text-[15px]">
+          {avatarUrl ? (
+            <Image src={avatarUrl} alt={form.fullName} width={96} height={96} className="rounded-full object-cover" />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-[#C6DCFF] grid place-items-center text-[#0F62FE] text-xl font-bold">
+              {form.fullName.split(" ").map(w=>w?.[0]).filter(Boolean).join("").slice(0,2)}
+            </div>
+          )}
+
+          <span
+            className={
+              rolePill === "Администратор"
+                ? "inline-block text-[13px] px-3 py-1 rounded-full bg-[#FFF2C6] text-[#8F5A00]"
+                : "inline-block text-[13px] px-3 py-1 rounded-full bg-[#EAF3FF] text-[#0F62FE]"
+            }
+          >
+            {rolePill}
+          </span>
+
+          <h1 className="text-[22px] font-semibold leading-tight">{form.fullName}</h1>
+
+          {!!form.email && (
+            <a href={`mailto:${form.email}`} className="text-[#0F62FE] break-all">
+              {form.email}
+            </a>
+          )}
+
+          {me?.birthDate && (
+            <div className="text-gray-600">
+              {formatBirthDate(me.birthDate)}
+              {age !== undefined ? ` (${age} лет)` : ""}
+            </div>
+          )}
+
+          <button
+            onClick={() => setOpenPwd(true)}
+            className="text-[#0F62FE] mt-1 hover:underline"
+          >
+            Изменить пароль
+          </button>
+        </div>
+      </section>
+
+      {/* ===== Форма (общая) ===== */}
+      <section className="rounded-2xl bg-white border border-[#E6EAF2] p-6 sm:p-8 shadow-sm">
         <h2 className="text-xl sm:text-[22px] font-semibold mb-6 sm:mb-7">Личные данные</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-          {/* ФИО */}
           <div className="space-y-1.5">
             <label className="text-[12.5px] sm:text-sm text-gray-500">ФИО</label>
             <input
@@ -239,7 +260,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Дата рождения */}
           <div className="space-y-1.5">
             <label className="text-[12.5px] sm:text-sm text-gray-500">Дата рождения</label>
             <input
@@ -250,7 +270,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Email */}
           <div className="space-y-1.5">
             <label className="text-[12.5px] sm:text-sm text-gray-500">Email</label>
             <input
@@ -262,7 +281,6 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Роль */}
           <div className="space-y-1.5">
             <label className="text-[12.5px] sm:text-sm text-gray-500">Роль</label>
             <select
@@ -277,7 +295,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* кнопка сохранения */}
         <div className="mt-6">
           <button
             onClick={onSave}
