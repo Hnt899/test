@@ -1,0 +1,17 @@
+import { clientGet } from "./http";
+
+export interface Post { id: number; title: string; body: string; userId: number; }
+export interface PostsResponse { posts: Post[]; total: number; skip?: number; limit?: number; }
+
+export async function fetchPosts(params?: { q?: string; limit?: number; skip?: number }) {
+  const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
+  if (params?.limit != null) qs.set("limit", String(params.limit));
+  if (params?.skip != null) qs.set("skip", String(params.skip));
+
+  const path = params?.q
+    ? `/posts/search?${qs}`
+    : (qs.toString() ? `/posts?${qs}` : `/posts`);
+
+  return clientGet<PostsResponse>(path);
+}
