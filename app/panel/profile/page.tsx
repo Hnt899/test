@@ -1,87 +1,123 @@
 "use client";
 
-import { useState } from "react";
-import { changePassword } from "@/shared/api-services/profile";
-import { toast } from "sonner";
+import Image from "next/image";
+import { useMe } from "@/shared/hooks/useMe";
+
+function formatBirthDate(iso?: string) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("ru-RU");
+}
+function calcAge(iso?: string) {
+  if (!iso) return undefined;
+  const b = new Date(iso);
+  const t = new Date();
+  let age = t.getFullYear() - b.getFullYear();
+  const m = t.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && t.getDate() < b.getDate())) age--;
+  return age;
+}
 
 export default function ProfilePage() {
-  const [oldPassword, setOld] = useState("");
-  const [newPassword, setNew] = useState("");
-  const [newPassword2, setNew2] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { data: me } = useMe();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!oldPassword || !newPassword || !newPassword2)
-      return toast.error("Заполните все поля");
-    if (newPassword !== newPassword2)
-      return toast.error("Пароли не совпадают");
+  const fullName =
+    [me?.firstName, me?.lastName].filter(Boolean).join(" ") ||
+    me?.username ||
+    me?.email ||
+    "Пользователь";
 
-    try {
-      setLoading(true);
-      await changePassword({ oldPassword, newPassword });
-      toast.success("Пароль успешно изменён");
-      setOld(""); setNew(""); setNew2("");
-    } catch (err) {
-      toast.error("Не удалось изменить пароль");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function logout() {
-    setLoading(true);
-    await fetch("/api/logout", { method: "POST" });
-    window.location.href = "/login";
-  }
+  const emailOrHandle = me?.email || (me?.username ? `@${me.username}` : "");
+  const avatarUrl = (me as any)?.image || (me as any)?.avatar || "";
+  const birth = formatBirthDate(me?.birthDate);
+  const age = calcAge(me?.birthDate);
 
   return (
-    <div className="max-w-md space-y-8">
-      <h1 className="text-2xl font-semibold">Профиль</h1>
+    <div className="space-y-6">
+      {/* Шапка */}
+      <section className="rounded-2xl bg-white border border-[#E6EAF2] p-6 sm:p-8 shadow-sm">
+        <div className="flex items-start gap-4 sm:gap-6">
+          <div className="shrink-0">
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt={fullName}
+                width={96}
+                height={96}
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-[#C6DCFF] grid place-items-center text-[#0F62FE] text-2xl font-semibold">
+                {fullName.split(" ").map(w => w?.[0]).filter(Boolean).join("").slice(0,2)}
+              </div>
+            )}
+          </div>
 
-      {/* форма смены пароля */}
-      <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-4 space-y-3">
-        <div className="font-medium">Смена пароля</div>
-        <input
-          type="password"
-          className="w-full border rounded px-3 py-2"
-          placeholder="Текущий пароль"
-          value={oldPassword}
-          onChange={(e) => setOld(e.target.value)}
-        />
-        <input
-          type="password"
-          className="w-full border rounded px-3 py-2"
-          placeholder="Новый пароль"
-          value={newPassword}
-          onChange={(e) => setNew(e.target.value)}
-        />
-        <input
-          type="password"
-          className="w-full border rounded px-3 py-2"
-          placeholder="Повторите новый пароль"
-          value={newPassword2}
-          onChange={(e) => setNew2(e.target.value)}
-        />
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
-          >
-            {loading ? "Сохраняем…" : "Сменить пароль"}
-          </button>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-[28px] font-bold text-ink truncate">
+              {fullName}
+            </h1>
+            {emailOrHandle && (
+              <a
+                href={me?.email ? `mailto:${me.email}` : undefined}
+                className="text-[14px] text-[#0F62FE] break-all"
+              >
+                {emailOrHandle}
+              </a>
+            )}
+
+            {/* Дата рождения + возраст под email, если есть */}
+            {birth && (
+              <div className="text-sm text-gray-600 mt-1">
+                {birth}{age !== undefined ? ` (${age} лет)` : ""}
+              </div>
+            )}
+          </div>
         </div>
-      </form>
+      </section>
 
-      {/* кнопка выхода */}
-      <button
-        onClick={logout}
-        disabled={loading}
-        className="px-4 py-2 bg-red-600 text-white rounded disabled:opacity-50"
-      >
-        {loading ? "Выходим…" : "Выйти из аккаунта"}
-      </button>
+      {/* Форма / карточка с полями */}
+      <section className="rounded-2xl bg-white border border-[#E6EAF2] p-6 sm:p-8 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Личные данные</h2>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">ФИО</label>
+            <input
+              className="w-full h-10 px-3 rounded-xl border border-[#E6EAF2] bg-[#F7F8FA]"
+              value={fullName}
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Email</label>
+            <input
+              className="w-full h-10 px-3 rounded-xl border border-[#E6EAF2] bg-[#F7F8FA]"
+              value={me?.email || ""}
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Имя пользователя</label>
+            <input
+              className="w-full h-10 px-3 rounded-xl border border-[#E6EAF2] bg-[#F7F8FA]"
+              value={me?.username || ""}
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500">Дата рождения</label>
+            <input
+              className="w-full h-10 px-3 rounded-xl border border-[#E6EAF2] bg-[#F7F8FA]"
+              value={birth || ""}
+              readOnly
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

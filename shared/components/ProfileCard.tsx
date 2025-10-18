@@ -11,22 +11,31 @@ export default function ProfileCard() {
 
   const name =
     [me?.firstName, me?.lastName].filter(Boolean).join(" ") ||
-    me?.username ||
-    me?.email ||
-    "Пользователь";
+    me?.username || me?.email || "Пользователь";
 
   const handle = me?.username ? `@${me.username}` : (me?.email || "");
-
-  // поддержим разные поля с аватаром
   const avatarUrl = (me as any)?.image || (me as any)?.avatar || "";
 
-  async function onLogout() {
+  function openProfile() {
+    router.push("/panel/profile");
+  }
+
+  async function onLogout(e: React.MouseEvent) {
+    e.stopPropagation();            // ← не даём всплыть клику на карточку
     try { await fetch("/api/logout", { method: "POST" }); } catch {}
     router.replace("/login");
   }
 
   return (
-    <div className="rounded-[14px] border border-[#DDEBFF] bg-[#EAF3FF] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]">
+    <div
+      onClick={openProfile}
+      className="rounded-[14px] border border-[#DDEBFF] bg-[#EAF3FF] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]
+                 cursor-pointer select-none"
+      role="button"
+      aria-label="Открыть профиль"
+      tabIndex={0}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openProfile()}
+    >
       <div className="flex items-center gap-3">
         <div className="shrink-0">
           {avatarUrl ? (

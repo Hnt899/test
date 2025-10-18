@@ -4,10 +4,11 @@ export type Me = {
   id?: number;
   firstName?: string;
   lastName?: string;
-  email?: string;
   username?: string;
-  image?: string;   // dummyjson
-  avatar?: string;  // возможное поле другого API
+  email?: string;
+  image?: string;
+  avatar?: string;
+  birthDate?: string;   // ← добавили
   guest?: boolean;
 };
 
