@@ -8,7 +8,6 @@ import { Menu as MenuIcon, X as XIcon, FileText, Shield, Users } from "lucide-re
 import BTXLogo from "@/shared/components/BTXLogo";
 import ProfileCard from "@/shared/components/ProfileCard";
 
-// навигация панели
 const NAV = [
   { href: "/panel/posts", label: "Публикации", icon: FileText },
   { href: "/panel/admins", label: "Администраторы", icon: Shield },
@@ -19,12 +18,11 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // закрывать бургер при смене роута
   useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <div className="min-h-screen bg-bg text-ink">
-      {/* ===== Mobile topbar (логотип + бургер) ===== */}
+    <div className="min-h-screen bg-white text-ink">
+      {/* Mobile topbar */}
       <div className="sm:hidden sticky top-0 z-40 bg-white border-b border-line h-14 flex items-center justify-between px-4">
         <BTXLogo className="text-[22px]" />
         <button
@@ -36,32 +34,18 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* ===== Основная сетка: сайдбар + контент ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-[240px_1fr]">
-        {/* ===== Desktop sidebar ===== */}
+        {/* Desktop sidebar */}
         <aside className="hidden sm:flex h-dvh sticky top-0 bg-white border-r border-line p-6 flex-col">
           <BTXLogo className="text-[22px] mb-6" />
-
           <NavList pathname={pathname} />
-
-          {/* раздел при необходимости
-          <div className="mt-6 pt-6 border-t border-line">
-            <Link href="/panel/profile" className="text-sm hover:text-brand">Профиль</Link>
-          </div> */}
-
-          {/* spacer чтобы профиль уехал к низу */}
           <div className="mt-auto" />
-
-          {/* карточка профиля — данные берутся из API */}
           <ProfileCard />
         </aside>
 
-        {/* ===== Mobile drawer (off-canvas) ===== */}
+        {/* Mobile drawer */}
         {open && (
-          <div
-            className="sm:hidden fixed inset-0 z-40 bg-black/40"
-            onClick={() => setOpen(false)}
-          />
+          <div className="sm:hidden fixed inset-0 z-40 bg-black/40" onClick={() => setOpen(false)} />
         )}
         <div
           className={`sm:hidden fixed z-50 top-0 left-0 h-full w-[78%] max-w-[320px]
@@ -80,21 +64,22 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           </div>
 
           <NavList pathname={pathname} />
-
-          {/* spacer → профиль прилипает к низу */}
           <div className="flex-1" />
-
           <ProfileCard />
         </div>
 
-        {/* ===== Content ===== */}
-        <main className="p-4 sm:p-8">{children}</main>
+        {/* Content */}
+        <main className="p-0">
+          {/* больше внешних отступов страницы + фон на всю колонку */}
+          <div className="min-h-dvh bg-[#E6F1FE] px-6 py-6 sm:px-12 sm:py-10 lg:px-16 lg:py-12">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );
 }
 
-/* ===== Нав-лист с «пилюлями» иконками ===== */
 function NavList({ pathname }: { pathname: string }) {
   return (
     <nav className="flex flex-col gap-2">

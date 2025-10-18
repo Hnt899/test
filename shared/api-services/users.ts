@@ -1,11 +1,21 @@
 import { clientGet } from "./http";
 
+/** Роль в API */
+export type RoleApi = "admin" | "user";
+
+/** Модель пользователя, с опциональными полями, которые используются в UI */
 export type User = {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+
+  // доп. поля, которые приходят из API/нужны в UI
+  username?: string;
+  birthDate?: string;      // ISO: yyyy-mm-dd
+  image?: string;          // avatar url
+  role?: RoleApi;          // <-- ключевое поле для смены роли
 };
 
 export type UsersResponse = {
@@ -41,9 +51,13 @@ export async function createUser(payload: Omit<User, "id">) {
   return (await res.json()) as User;
 }
 
+/**
+ * Обновление пользователя.
+ * Принимает любые частичные поля пользователя, включая role.
+ */
 export async function updateUser(id: number, payload: Partial<Omit<User, "id">>) {
   const res = await fetch(`${API_BASE}/users/${id}`, {
-    method: "PUT",
+    method: "PUT", // у твоего тест-API PUT работает как PATCH
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
