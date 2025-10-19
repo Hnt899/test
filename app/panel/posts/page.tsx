@@ -50,10 +50,10 @@ function extractNumber(value: unknown) {
 
 function getPostViews(post: Post) {
   return (
-    extractNumber(post.views)
-    ?? extractNumber((post as any)["viewsCount"])
-    ?? extractNumber((post as any)["viewCount"])
-    ?? 0
+    extractNumber(post.views) ??
+    extractNumber((post as any)["viewsCount"]) ??
+    extractNumber((post as any)["viewCount"]) ??
+    0
   );
 }
 
@@ -63,27 +63,27 @@ function getPostLikes(post: Post) {
   if ((post as any).reactions && typeof (post as any).reactions === "object") {
     const reactionObj = (post as any).reactions as Record<string, unknown>;
     return (
-      extractNumber(reactionObj.likes)
-      ?? extractNumber(reactionObj.total)
-      ?? extractNumber(reactionObj.upvotes)
-      ?? 0
+      extractNumber(reactionObj.likes) ??
+      extractNumber(reactionObj.total) ??
+      extractNumber(reactionObj.upvotes) ??
+      0
     );
   }
   return (
-    extractNumber((post as any)["likesCount"])
-    ?? extractNumber((post as any)["thumbsUp"])
-    ?? 0
+    extractNumber((post as any)["likesCount"]) ??
+    extractNumber((post as any)["thumbsUp"]) ??
+    0
   );
 }
 
 function getPostComments(post: Post) {
   return (
-    extractNumber(post.comments)
-    ?? extractNumber(((post as any).reactions as Record<string, unknown> | undefined)?.comments)
-    ?? extractNumber((post as any)["commentsCount"])
-    ?? extractNumber((post as any)["commentCount"])
-    ?? extractNumber((post as any)["totalComments"])
-    ?? 0
+    extractNumber(post.comments) ??
+    extractNumber(((post as any).reactions as Record<string, unknown> | undefined)?.comments) ??
+    extractNumber((post as any)["commentsCount"]) ??
+    extractNumber((post as any)["commentCount"]) ??
+    extractNumber((post as any)["totalComments"]) ??
+    0
   );
 }
 
@@ -205,10 +205,11 @@ export default function PostsPage() {
       }
       const newSeed = Math.floor(Math.random() * 0xffffffff) || 1;
       setRandomSeed(newSeed);
-      return null;
+      return null; // сброс в случайный порядок
     });
   };
 
+  // Закрывать мобильное меню сортировки при изменении сортировки/режима
   useEffect(() => {
     if (isSortMenuOpen) setIsSortMenuOpen(false);
   }, [sort, isRandomSort, isSortMenuOpen]);
@@ -217,8 +218,8 @@ export default function PostsPage() {
     <div className="page">
       <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold leading-tight">Публикации</h1>
-          <p className="mt-1 text-sm font-semibold text-sub">Управление публикациями пользователей</p>
+          <h1>Публикации</h1>
+          <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
         </div>
 
         {/* Поле поиска с иконкой */}
@@ -275,6 +276,10 @@ export default function PostsPage() {
                 const fullName = formatUserName(author);
                 const initials = userInitials(author) || (author ? author.firstName?.[0] ?? "" : "");
 
+                const views = getPostViews(post);
+                const likes = getPostLikes(post);
+                const comments = getPostComments(post);
+
                 return (
                   <tr key={post.id} className="tr">
                     <td className="td font-medium text-sub">#{post.id}</td>
@@ -295,9 +300,9 @@ export default function PostsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostViews(post))}</td>
-                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostLikes(post))}</td>
-                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostComments(post))}</td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(views)}</td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(likes)}</td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(comments)}</td>
                     <td className="td text-right">
                       <CommentsLink href={`/panel/posts/${post.id}/comments`} />
                     </td>
