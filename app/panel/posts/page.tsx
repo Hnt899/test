@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import CommentsModal from "@/shared/components/CommentsModal";
 import { usePosts } from "@/shared/hooks/usePosts";
@@ -13,12 +14,11 @@ import type { Post } from "@/shared/api-services/posts";
 const PAGE_SIZES = [10, 20, 50];
 const NUMBER_FORMAT = new Intl.NumberFormat("ru-RU");
 
-type SortField = "id" | "title" | "views" | "likes" | "comments";
+type SortField = "id" | "views" | "likes" | "comments";
 type SortState = { field: SortField; order: "asc" | "desc" } | null;
 
 const SORT_API_FIELD: Record<SortField, string> = {
   id: "id",
-  title: "title",
   views: "views",
   likes: "likes",
   comments: "comments",
@@ -59,6 +59,7 @@ function getPostLikes(post: Post) {
 function getPostComments(post: Post) {
   return (
     extractNumber(post.comments)
+    ?? extractNumber((post.reactions as Record<string, unknown> | undefined)?.comments)
     ?? extractNumber(post["commentsCount"])
     ?? extractNumber(post["commentCount"])
     ?? extractNumber(post["totalComments"])
@@ -70,8 +71,6 @@ function getSortValue(post: Post, field: SortField) {
   switch (field) {
     case "id":
       return post.id;
-    case "title":
-      return post.title.toLowerCase();
     case "views":
       return getPostViews(post);
     case "likes":
@@ -119,8 +118,24 @@ export default function PostsPage() {
   const [q, setQ] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<SortState>({ field: "id", order: "asc" });
+  const [sort, setSort] = useState<SortState>(null);
+  const [randomSeed, setRandomSeed] = useState<number | null>(null);
   const [openComments, setOpenComments] = useState<null | { postId: number; title: string }>(null);
+  const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
+  const pageSizeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (pageSizeRef.current && !pageSizeRef.current.contains(event.target as Node)) {
+        setIsPageSizeOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const params = useMemo(() => {
     const skip = (page - 1) * pageSize;
@@ -138,9 +153,16 @@ export default function PostsPage() {
   const total = data?.total ?? 0;
   const pages = Math.max(1, Math.ceil(total / pageSize));
 
+  useEffect(() => {
+    setPage((prev) => Math.min(prev, pages));
+  }, [pages]);
+
   const sortedPosts = useMemo(() => {
     const copy = [...posts];
-    if (!sort) return copy;
+    if (!sort) {
+      if (!randomSeed) return copy;
+      return shuffleWithSeed(copy, randomSeed);
+    }
     const direction = sort.order === "asc" ? 1 : -1;
     copy.sort((a, b) => {
       const aValue = getSortValue(a, sort.field);
@@ -155,44 +177,41 @@ export default function PostsPage() {
       return aString.localeCompare(bString) * direction;
     });
     return copy;
-  }, [posts, sort]);
+  }, [posts, sort, randomSeed]);
 
   const authors = useAuthorsMap(sortedPosts);
 
   const handleToggleSort = (field: SortField) => {
     setPage(1);
     setSort((prev) => {
-      if (prev?.field === field) {
-        return { field, order: prev.order === "asc" ? "desc" : "asc" };
+      if (!prev || prev.field !== field) {
+        setRandomSeed(null);
+        return { field, order: "desc" };
       }
-      if (field === "title") {
+      if (prev.order === "desc") {
+        setRandomSeed(null);
         return { field, order: "asc" };
       }
-      return { field, order: "desc" };
+      const newSeed = Math.floor(Math.random() * 0xffffffff) || 1;
+      setRandomSeed(newSeed);
+      return null;
     });
   };
 
   return (
     <div className="page">
-      <div className="flex items-center justify-between">
-        <h1>Публикации</h1>
-      </div>
+      <div className="section flex flex-col gap-4">
+        <div>
+          <h1>Публикации</h1>
+          <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
+        </div>
 
-      {/* фильтры */}
-      <div className="section flex flex-wrap items-center gap-2">
         <input
-          className="input max-w-xs"
-          placeholder="Поиск по заголовку/тексту"
+          className="input max-w-md"
+          placeholder="Поиск по публикациям"
           value={q}
           onChange={(e) => { setPage(1); setQ(e.target.value); }}
         />
-        <select
-          className="select w-[120px]"
-          value={pageSize}
-          onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
-        >
-          {PAGE_SIZES.map((s) => <option key={s} value={s}>{s} / стр.</option>)}
-        </select>
       </div>
 
       {/* таблица */}
@@ -201,7 +220,7 @@ export default function PostsPage() {
           <thead className="thead">
             <tr>
               <SortableHeader field="id" label="ID" sort={sort} onToggle={handleToggleSort} />
-              <SortableHeader field="title" label="Пост" sort={sort} onToggle={handleToggleSort} />
+              <th className="th">Пост</th>
               <th className="th">Автор</th>
               <SortableHeader
                 field="views"
@@ -224,7 +243,7 @@ export default function PostsPage() {
                 onToggle={handleToggleSort}
                 align="right"
               />
-              <th className="th text-right">Действия</th>
+              <th className="th text-right" aria-label="Комментарий переход" />
             </tr>
           </thead>
           <tbody>
@@ -275,12 +294,9 @@ export default function PostsPage() {
                   <td className="td text-right font-medium">{NUMBER_FORMAT.format(likes)}</td>
                   <td className="td text-right font-medium">{NUMBER_FORMAT.format(comments)}</td>
                   <td className="td text-right">
-                    <button
-                      className="btn-primary px-4 py-2 text-sm"
+                    <CommentsLink
                       onClick={() => setOpenComments({ postId: post.id, title: post.title })}
-                    >
-                      Комментарии
-                    </button>
+                    />
                   </td>
                 </tr>
               );
@@ -290,22 +306,39 @@ export default function PostsPage() {
       </div>
 
       {/* пагинация */}
-      <div className="flex items-center gap-2">
-        <button
-          className="btn-ghost disabled:opacity-50"
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          disabled={page <= 1}
-        >
-          ←
-        </button>
-        <span className="text-sm text-sub">Стр. {page} из {pages}</span>
-        <button
-          className="btn-ghost disabled:opacity-50"
-          onClick={() => setPage((p) => Math.min(pages, p + 1))}
-          disabled={page >= pages}
-        >
-          →
-        </button>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <Pagination page={page} pages={pages} onChange={setPage} />
+
+        <div className="relative" ref={pageSizeRef}>
+          <button
+            type="button"
+            className="page-size-button"
+            onClick={() => setIsPageSizeOpen((prev) => !prev)}
+          >
+            <span className="text-sub mr-2">Показывать на странице</span>
+            <span className="text-base font-semibold text-ink">{pageSize}</span>
+            <ChevronDown className="ml-1 h-4 w-4 text-brand" />
+          </button>
+
+          {isPageSizeOpen && (
+            <div className="page-size-menu">
+              {PAGE_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  className={`page-size-option${size === pageSize ? " active" : ""}`}
+                  onClick={() => {
+                    setIsPageSizeOpen(false);
+                    setPage(1);
+                    setPageSize(size);
+                  }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* модалка комментариев */}
@@ -358,4 +391,150 @@ function SortableHeader({
       </button>
     </th>
   );
+}
+
+function Pagination({
+  page,
+  pages,
+  onChange,
+}: {
+  page: number;
+  pages: number;
+  onChange: (page: number) => void;
+}) {
+  const numbers = useMemo(() => buildPagination(page, pages), [page, pages]);
+
+  return (
+    <div className="pagination">
+      <PaginationButton
+        label="Предыдущая страница"
+        disabled={page <= 1}
+        onClick={() => onChange(Math.max(1, page - 1))}
+        icon="prev"
+      />
+      {numbers.map((n, index) => (
+        typeof n === "number"
+          ? (
+            <PaginationButton
+              key={n}
+              active={n === page}
+              onClick={() => onChange(n)}
+            >
+              {n}
+            </PaginationButton>
+          )
+          : (
+            <span key={`gap-${index}`} className="pagination-ellipsis">…</span>
+          )
+      ))}
+      <PaginationButton
+        label="Следующая страница"
+        disabled={page >= pages}
+        onClick={() => onChange(Math.min(pages, page + 1))}
+        icon="next"
+      />
+    </div>
+  );
+}
+
+function PaginationButton({
+  children,
+  onClick,
+  disabled,
+  active,
+  icon,
+  label,
+}: {
+  children?: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  icon?: "prev" | "next";
+  label?: string;
+}) {
+  const content = icon === "prev"
+    ? <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    : icon === "next"
+      ? <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      : children;
+
+  return (
+    <button
+      type="button"
+      className={`pagination-button${active ? " active" : ""}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+    >
+      {content}
+    </button>
+  );
+}
+
+function buildPagination(current: number, total: number) {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(total);
+  pages.add(current);
+  pages.add(current - 1);
+  pages.add(current + 1);
+
+  const sorted = Array.from(pages)
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
+
+  const result: Array<number | "gap"> = [];
+  for (let i = 0; i < sorted.length; i += 1) {
+    const value = sorted[i];
+    if (i > 0) {
+      const prev = sorted[i - 1];
+      if (value - prev > 1) {
+        result.push("gap");
+      }
+    }
+    result.push(value);
+  }
+
+  return result;
+}
+
+function CommentsLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="comments-link"
+      onClick={onClick}
+      aria-label="Открыть комментарии к публикации"
+    >
+      <ChevronRight className="h-5 w-5" />
+    </button>
+  );
+}
+
+function shuffleWithSeed<T>(array: T[], seed: number) {
+  let currentIndex = array.length;
+  const result = [...array];
+  const random = mulberry32(seed);
+
+  while (currentIndex > 0) {
+    const randomIndex = Math.floor(random() * currentIndex);
+    currentIndex -= 1;
+    [result[currentIndex], result[randomIndex]] = [result[randomIndex], result[currentIndex]];
+  }
+
+  return result;
+}
+
+function mulberry32(a: number) {
+  let t = a + 0x6D2B79F5;
+  return function random() {
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }

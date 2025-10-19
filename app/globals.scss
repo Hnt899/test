@@ -32,6 +32,26 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .th          { @apply text-left p-3 text-sub font-medium border-b border-line; }
   .td          { @apply p-3 align-top border-b border-line; }
   .tr:hover    { @apply bg-gray-50; }
+  .pagination  { @apply flex items-center gap-2; }
+  .pagination-button {
+    @apply h-9 min-w-[36px] rounded-lg border border-line bg-white text-sm font-medium text-sub transition-colors;
+    @apply flex items-center justify-center hover:border-brand hover:bg-brand/10 hover:text-brand disabled:opacity-50 disabled:hover:bg-white;
+  }
+  .pagination-button.active { @apply border-brand bg-brand text-white; }
+  .pagination-ellipsis { @apply px-2 text-sm text-sub; }
+  .page-size-button {
+    @apply flex items-center rounded-lg border border-line bg-white px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:border-brand hover:bg-brand/10;
+  }
+  .page-size-menu {
+    @apply absolute right-0 top-full z-10 mt-2 w-36 overflow-hidden rounded-lg border border-line bg-white shadow-lg;
+  }
+  .page-size-option {
+    @apply block w-full px-4 py-2 text-left text-sm text-sub transition-colors hover:bg-brand/10 hover:text-brand;
+  }
+  .page-size-option.active { @apply bg-brand/10 font-semibold text-brand; }
+  .comments-link {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-brand transition-colors hover:border-brand hover:bg-brand hover:text-white;
+  }
 }
 
 /* Sidebar */
