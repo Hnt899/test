@@ -4,7 +4,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import CommentsModal from "@/shared/components/CommentsModal";
 import { usePosts } from "@/shared/hooks/usePosts";
@@ -206,21 +206,24 @@ export default function PostsPage() {
     <div className="page">
       <div className="flex flex-col gap-4">
         <div>
-          <h1>Публикации</h1>
-          <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight">Публикации</h1>
+          <p className="mt-1 text-sm font-semibold text-sub">Управление публикациями пользователей</p>
         </div>
 
-        <input
-          className="input max-w-md"
-          placeholder="Поиск по публикациям"
-          value={q}
-          onChange={(e) => {
-            resetToFirstPage();
-            setQ(e.target.value);
-          }}
-        />
+        {/* Поле поиска с иконкой */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sub" />
+          <input
+            className="input pl-10 w-full"
+            placeholder="Поиск по публикациям"
+            value={q}
+            onChange={(e) => {
+              resetToFirstPage();
+              setQ(e.target.value);
+            }}
+          />
+        </div>
       </div>
-
       {/* таблица */}
       <div className="table-wrap">
         <table className="table">
