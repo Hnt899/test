@@ -8,6 +8,15 @@ function isEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+function normalizeDateInput(value?: string) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toISOString().slice(0, 10);
+}
+
 export default function AdminFormModal({
   open, onClose, mode, initial, onSubmit, loading = false,
 }: {
@@ -21,6 +30,7 @@ export default function AdminFormModal({
   const [firstName, setFirstName] = useState(initial?.firstName ?? "");
   const [lastName, setLastName] = useState(initial?.lastName ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
+  const [birthDate, setBirthDate] = useState(normalizeDateInput(initial?.birthDate));
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -28,6 +38,7 @@ export default function AdminFormModal({
       setFirstName(initial?.firstName ?? "");
       setLastName(initial?.lastName ?? "");
       setEmail(initial?.email ?? "");
+      setBirthDate(normalizeDateInput(initial?.birthDate));
       setErrors({});
     }
   }, [open, initial]);
@@ -49,7 +60,12 @@ export default function AdminFormModal({
     setErrors(e);
     if (Object.keys(e).length) return;
 
-    await onSubmit({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() });
+    await onSubmit({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      birthDate: birthDate || undefined,
+    });
   }
 
   return (
@@ -69,6 +85,15 @@ export default function AdminFormModal({
           <label className="block text-sm mb-1">Email</label>
           <input className="w-full border rounded px-3 py-2" value={email} onChange={e => setEmail(e.target.value)} />
           {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Дата рождения</label>
+          <input
+            type="date"
+            className="w-full border rounded px-3 py-2"
+            value={birthDate}
+            onChange={e => setBirthDate(e.target.value)}
+          />
         </div>
 
         <div className="pt-2 flex gap-2 justify-end">
