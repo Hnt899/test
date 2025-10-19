@@ -88,7 +88,7 @@ export default function AdminsPage() {
     !isLoading &&
     !isError &&
     showMoreCount === 0 &&
-    (skip + BASE_PAGE_SIZE) < total;
+    skip + BASE_PAGE_SIZE < total;
 
   return (
     <div className="page">
@@ -332,11 +332,7 @@ function Pagination({
           icon="prev"
         />
         {numbers.map((n) => (
-          <PaginationButton
-            key={n}
-            active={n === page}
-            onClick={() => onChange(n)}
-          >
+          <PaginationButton key={n} active={n === page} onClick={() => onChange(n)}>
             {n}
           </PaginationButton>
         ))}
@@ -366,11 +362,14 @@ function PaginationButton({
   icon?: "prev" | "next";
   label?: string;
 }) {
-  const content = icon === "prev"
-    ? <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-    : icon === "next"
-      ? <ChevronRight className="h-4 w-4" aria-hidden="true" />
-      : children;
+  const content =
+    icon === "prev" ? (
+      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    ) : icon === "next" ? (
+      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+    ) : (
+      children
+    );
 
   return (
     <button
