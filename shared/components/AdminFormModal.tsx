@@ -1,6 +1,9 @@
 "use client";
 
+
 import React, { useEffect, useMemo, useState } from "react";
+
+
 import { CircleUserRound, X } from "lucide-react";
 import Modal from "./Modal";
 import type { Admin } from "@/shared/api-services/admins";
@@ -106,7 +109,9 @@ export default function AdminFormModal({
       firstName: parsedName.firstName,
       lastName: parsedName.lastName,
       email: trimmedEmail,
+
       birthDate: toIsoDate(birthDate),
+
     });
   }
 
@@ -115,13 +120,16 @@ export default function AdminFormModal({
       open={open}
       onClose={onClose}
       hideHeader
+      
       dialogClassName="card w-[420px] max-w-[calc(100vw-48px)] rounded-[32px] border-none shadow-2xl"
       contentClassName="p-10"
+
     >
       <div className="relative flex flex-col items-center text-center">
         <button
           type="button"
           onClick={onClose}
+
           className="absolute right-5 top-5 inline-flex h-6 w-6 items-center justify-center text-sub transition-colors hover:text-ink"
           aria-label="Закрыть модальное окно"
         >
@@ -135,6 +143,7 @@ export default function AdminFormModal({
         </div>
 
         <form className="mt-7 flex w-full flex-col gap-5 text-left" onSubmit={handleSubmit}>
+
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-sub">ФИО</span>
             <input
@@ -161,9 +170,11 @@ export default function AdminFormModal({
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-sub">Дата рождения</span>
             <input
+
               type="text"
               inputMode="numeric"
               placeholder="19.09.1990"
+
               className="input h-12 rounded-xl text-sm font-medium"
               value={birthDate}
               onChange={(event) => setBirthDate(event.target.value)}
@@ -173,6 +184,7 @@ export default function AdminFormModal({
           <button
             type="submit"
             className="btn-primary mt-1 h-12 w-full rounded-full text-sm font-semibold disabled:opacity-60"
+
             disabled={loading}
           >
             {loading ? "Сохраняем…" : "Сохранить"}
