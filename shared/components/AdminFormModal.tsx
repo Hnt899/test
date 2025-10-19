@@ -130,7 +130,7 @@ export default function AdminFormModal({
           type="button"
           onClick={onClose}
 
-          className="absolute right-5 top-5 inline-flex h-6 w-6 items-center justify-center text-sub transition-colors hover:text-ink"
+          className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center text-sub transition-colors hover:text-ink"
           aria-label="Закрыть модальное окно"
         >
           <X className="h-5 w-5" strokeWidth={2.25} />
@@ -183,7 +183,8 @@ export default function AdminFormModal({
 
           <button
             type="submit"
-            className="btn-primary mt-1 h-12 w-full rounded-full text-sm font-semibold disabled:opacity-60"
+            className="mt-1 h-12 w-full rounded-full bg-blue-600 text-white text-sm font-semibold
+             hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
 
             disabled={loading}
           >

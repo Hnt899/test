@@ -111,15 +111,15 @@ export default function AdminsPage() {
         <div className="search-field relative w-full md:max-w-xl">
         <Search className="search-field__icon pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-sub" aria-hidden="true" />
         <input
-        type="search"
-        className="search-field__input w-full h-12 rounded-full border border-slate-200 bg-white pl-10 pr-4
-               text-sm text-ink placeholder:text-sub shadow-sm
-               focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
-        placeholder="Поиск по администраторам"
-        aria-label="Поиск по администраторам"
-        value={q}
-        onChange={(e) => handleSearchChange(e.target.value)}
-           />
+          type="search"
+          className="search-field__input w-full h-12 rounded-lg border border-slate-200 bg-white pl-10 pr-4
+                text-sm text-ink placeholder:text-sub shadow-sm
+                focus:outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
+          placeholder="Поиск по администраторам"
+          aria-label="Поиск по администраторам"
+          value={q}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
          </div>
 
       </div>
