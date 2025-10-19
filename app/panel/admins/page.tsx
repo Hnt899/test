@@ -6,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useId,
   type ReactNode,
 } from "react";
 import {
@@ -124,7 +123,17 @@ export default function AdminsPage() {
 
       </div>
 
-      <div className="table-wrap">
+      <div className="md:hidden">
+        <MobileAdminsList
+          admins={admins}
+          isLoading={isLoading}
+          isError={isError}
+          onEdit={(admin) => setEditItem(admin)}
+          onDelete={(admin) => setDeleteId(admin.id)}
+        />
+      </div>
+
+      <div className="table-wrap hidden md:block">
         <table className="table">
           <thead className="thead">
             <tr>
@@ -312,6 +321,83 @@ function formatGender(gender?: string) {
   if (value === "male") return "Мужской";
   if (value === "female") return "Женский";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function MobileAdminsList({
+  admins,
+  isLoading,
+  isError,
+  onEdit,
+  onDelete,
+}: {
+  admins: Admin[];
+  isLoading: boolean;
+  isError: boolean;
+  onEdit: (admin: Admin) => void;
+  onDelete: (admin: Admin) => void;
+}) {
+  if (isLoading) return <div className="mobile-admins-empty">Загрузка…</div>;
+  if (isError) return <div className="mobile-admins-empty text-danger">Ошибка загрузки</div>;
+  if (admins.length === 0) return <div className="mobile-admins-empty text-sub">Ничего не найдено</div>;
+
+  return (
+    <div className="mobile-admin-list">
+      {admins.map((admin) => {
+        const avatarUrl = typeof admin.image === "string" ? admin.image : "";
+        const initials = userInitials(admin) || (admin.firstName?.[0] ?? "");
+        const fullName = formatAdminFullName(admin);
+        const birthDateLabel = formatBirthDate(admin);
+        const genderLabel = formatGender(admin.gender);
+        const email = admin.email?.trim();
+
+        return (
+          <div key={admin.id} className="mobile-admin-card">
+            <div className="mobile-admin-card__header">
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl}
+                  alt={fullName}
+                  width={48}
+                  height={48}
+                  className="mobile-admin-card__avatar-image"
+                />
+              ) : (
+                <div className="mobile-admin-card__avatar-fallback">{initials || "?"}</div>
+              )}
+              <RowActions
+                onEdit={() => onEdit(admin)}
+                onDelete={() => onDelete(admin)}
+              />
+            </div>
+
+            <div className="mobile-admin-card__name">{fullName}</div>
+
+            {email ? (
+              <a
+                href={`mailto:${email}`}
+                className="mobile-admin-card__email"
+              >
+                {email}
+              </a>
+            ) : (
+              <span className="mobile-admin-card__email text-sub">—</span>
+            )}
+
+            <div className="mobile-admin-card__meta">
+              <div>
+                <div className="mobile-admin-card__meta-label">Дата рождения</div>
+                <div className="mobile-admin-card__meta-value">{birthDateLabel}</div>
+              </div>
+              <div>
+                <div className="mobile-admin-card__meta-label">Пол</div>
+                <div className="mobile-admin-card__meta-value">{genderLabel}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function Pagination({
