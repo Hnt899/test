@@ -1,15 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
-import CommentsModal from "@/shared/components/CommentsModal";
 import { usePosts } from "@/shared/hooks/usePosts";
 import { fetchUserById, type User } from "@/shared/api-services/users";
 import type { Post } from "@/shared/api-services/posts";
+import { formatUserName, userInitials } from "@/shared/lib/userDisplay";
+import { buildSlidingWindow } from "@/shared/lib/pagination";
 
 const BASE_PAGE_SIZE = 10;
 const NUMBER_FORMAT = new Intl.NumberFormat("ru-RU");
@@ -82,18 +84,6 @@ function getSortValue(post: Post, field: SortField) {
   }
 }
 
-function initialsFromUser(user?: User) {
-  if (!user) return "";
-  const first = user.firstName?.[0] ?? "";
-  const last = user.lastName?.[0] ?? "";
-  return `${first}${last}`.toUpperCase();
-}
-
-function formatFullName(user?: User) {
-  if (!user) return "Без имени";
-  return `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Без имени";
-}
-
 function useAuthorsMap(posts: Post[]) {
   const userIds = useMemo(() => Array.from(new Set(posts.map((p) => p.userId).filter(Boolean))), [posts]);
 
@@ -119,7 +109,6 @@ export default function PostsPage() {
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<SortState>(null);
   const [randomSeed, setRandomSeed] = useState<number | null>(null);
-  const [openComments, setOpenComments] = useState<null | { postId: number; title: string }>(null);
   const [showMoreCount, setShowMoreCount] = useState(0);
 
   const skip = (page - 1) * BASE_PAGE_SIZE;
@@ -181,9 +170,7 @@ export default function PostsPage() {
     setShowMoreCount(0);
   };
 
-  const resetToFirstPage = () => {
-    handleChangePage(1, true);
-  };
+  const resetToFirstPage = () => handleChangePage(1, true);
 
   const handleToggleSort = (field: SortField) => {
     resetToFirstPage();
@@ -224,6 +211,7 @@ export default function PostsPage() {
           />
         </div>
       </div>
+
       {/* таблица */}
       <div className="table-wrap">
         <table className="table">
@@ -232,27 +220,9 @@ export default function PostsPage() {
               <SortableHeader field="id" label="ID" sort={sort} onToggle={handleToggleSort} />
               <th className="th">Пост</th>
               <th className="th">Автор</th>
-              <SortableHeader
-                field="views"
-                label="Просмотры"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="likes"
-                label="Лайки"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="comments"
-                label="Комментарии"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
+              <SortableHeader field="views" label="Просмотры" sort={sort} onToggle={handleToggleSort} align="right" />
+              <SortableHeader field="likes" label="Лайки" sort={sort} onToggle={handleToggleSort} align="right" />
+              <SortableHeader field="comments" label="Комментарии" sort={sort} onToggle={handleToggleSort} align="right" />
               <th className="th text-right" aria-label="Комментарий переход" />
             </tr>
           </thead>
@@ -265,13 +235,9 @@ export default function PostsPage() {
 
             {sortedPosts.map((post) => {
               const author = authors[post.userId];
-              const avatarUrl = (author?.image as string | undefined) || "";
-              const fullName = formatFullName(author);
-              const initials = initialsFromUser(author) || (author ? author.firstName?.[0] ?? "" : "");
-
-              const views = getPostViews(post);
-              const likes = getPostLikes(post);
-              const comments = getPostComments(post);
+              const avatarUrl = typeof author?.image === "string" ? author.image : "";
+              const fullName = formatUserName(author);
+              const initials = userInitials(author) || (author ? author.firstName?.[0] ?? "" : "");
 
               return (
                 <tr key={post.id} className="tr">
@@ -282,13 +248,7 @@ export default function PostsPage() {
                   <td className="td">
                     <div className="flex items-center gap-3">
                       {avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt={fullName}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
+                        <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
                           {initials || "?"}
@@ -299,13 +259,11 @@ export default function PostsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(views)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(likes)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(comments)}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostViews(post))}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostLikes(post))}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostComments(post))}</td>
                   <td className="td text-right">
-                    <CommentsLink
-                      onClick={() => setOpenComments({ postId: post.id, title: post.title })}
-                    />
+                    <CommentsLink href={`/panel/posts/${post.id}/comments`} />
                   </td>
                 </tr>
               );
@@ -335,14 +293,6 @@ export default function PostsPage() {
 
         <Pagination page={page} pages={pages} onChange={handleChangePage} />
       </div>
-
-      {/* модалка комментариев */}
-      <CommentsModal
-        open={!!openComments}
-        onClose={() => setOpenComments(null)}
-        postId={openComments?.postId ?? 0}
-        title={openComments?.title ?? ""}
-      />
     </div>
   );
 }
@@ -368,18 +318,12 @@ function SortableHeader({
       ? <ArrowUp className="h-4 w-4 text-brand" />
       : <ArrowDown className="h-4 w-4 text-brand" />;
 
-  const buttonClasses = [
-    "flex w-full items-center gap-1 text-sm font-medium transition-colors",
-    align === "right" ? "justify-end text-right" : "justify-start text-left",
-    isActive ? "text-brand" : "text-sub hover:text-brand",
-  ].join(" ");
-
   return (
     <th className={`th ${align === "right" ? "text-right" : "text-left"}`}>
       <button
         type="button"
         onClick={() => onToggle(field)}
-        className={buttonClasses}
+        className={`flex w-full items-center gap-1 text-sm font-medium transition-colors ${align === "right" ? "justify-end" : "justify-start"} ${isActive ? "text-brand" : "text-sub hover:text-brand"}`}
       >
         <span>{label}</span>
         {icon}
@@ -397,32 +341,18 @@ function Pagination({
   pages: number;
   onChange: (page: number) => void;
 }) {
-  const numbers = useMemo(() => buildPagination(page, pages), [page, pages]);
+  const numbers = useMemo(() => buildSlidingWindow(page, pages), [page, pages]);
 
   return (
     <div className="pagination">
       <div className="pagination-group divide-x-2 divide-brand">
-        <PaginationButton
-          label="Предыдущая страница"
-          disabled={page <= 1}
-          onClick={() => onChange(Math.max(1, page - 1))}
-          icon="prev"
-        />
+        <PaginationButton label="Предыдущая страница" disabled={page <= 1} onClick={() => onChange(Math.max(1, page - 1))} icon="prev" />
         {numbers.map((n) => (
-          <PaginationButton
-            key={n}
-            active={n === page}
-            onClick={() => onChange(n)}
-          >
+          <PaginationButton key={n} active={n === page} onClick={() => onChange(n)}>
             {n}
           </PaginationButton>
         ))}
-        <PaginationButton
-          label="Следующая страница"
-          disabled={page >= pages}
-          onClick={() => onChange(Math.min(pages, page + 1))}
-          icon="next"
-        />
+        <PaginationButton label="Следующая страница" disabled={page >= pages} onClick={() => onChange(Math.min(pages, page + 1))} icon="next" />
       </div>
     </div>
   );
@@ -463,32 +393,11 @@ function PaginationButton({
   );
 }
 
-function buildPagination(current: number, total: number) {
-  const windowSize = Math.min(3, total);
-  let start = current - 1;
-
-  if (start < 1) {
-    start = 1;
-  }
-
-  const maxStart = total - windowSize + 1;
-  if (start > maxStart) {
-    start = Math.max(1, maxStart);
-  }
-
-  return Array.from({ length: windowSize }, (_, index) => start + index);
-}
-
-function CommentsLink({ onClick }: { onClick: () => void }) {
+function CommentsLink({ href }: { href: string }) {
   return (
-    <button
-      type="button"
-      className="comments-link"
-      onClick={onClick}
-      aria-label="Открыть комментарии к публикации"
-    >
+    <Link href={href} className="comments-link" aria-label="Открыть комментарии к публикации">
       <ChevronRight className="h-5 w-5" />
-    </button>
+    </Link>
   );
 }
 

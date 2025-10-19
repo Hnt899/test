@@ -43,3 +43,7 @@ export async function fetchPosts(params?: {
 
   return clientGet<PostsResponse>(path);
 }
+
+export async function fetchPostById(id: number) {
+  return clientGet<Post>(`/posts/${id}`);
+}

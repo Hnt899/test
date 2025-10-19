@@ -43,9 +43,9 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .pagination-button.disabled:hover { @apply bg-transparent; }
 
   /* Кнопка "Показать ещё 10" — стиль Codex */
-  .show-more-button        { @apply inline-flex items-center gap-2 text-sm font-semibold text-sub transition-colors bg-transparent px-0 py-0; }
-  .show-more-button__number{ @apply text-brand; }
-  .show-more-button:hover  { @apply text-brand; }
+  .show-more-button         { @apply inline-flex items-center gap-2 text-sm font-semibold text-sub transition-colors bg-transparent px-0 py-0; }
+  .show-more-button__number { @apply text-brand; }
+  .show-more-button:hover   { @apply text-brand; }
 
   /* Ссылка-комментарии */
   .comments-link {
