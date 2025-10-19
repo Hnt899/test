@@ -212,7 +212,7 @@ export default function PostsPage() {
   // Закрывать мобильное меню сортировки при изменении сортировки/режима
   useEffect(() => {
     if (isSortMenuOpen) setIsSortMenuOpen(false);
-  }, [sort, isRandomSort, isSortMenuOpen]);
+  }, [sort, isRandomSort,]);
 
   return (
     <div className="page">

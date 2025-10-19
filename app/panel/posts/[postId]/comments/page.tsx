@@ -50,9 +50,7 @@ export default function PostCommentsPage() {
   } = useComments(hasValidPostId ? postId : null);
 
   const comments = useMemo(() => {
-    const raw = Array.isArray(commentsData)
-      ? commentsData
-      : commentsData?.comments ?? [];
+    const raw = Array.isArray(commentsData) ? commentsData : commentsData?.comments ?? [];
     return raw as ExtendedComment[];
   }, [commentsData]);
 
@@ -61,8 +59,8 @@ export default function PostCommentsPage() {
     if (!term) return comments;
     return comments.filter((comment) => {
       const body = comment.body?.toLowerCase?.() ?? String(comment.body ?? "").toLowerCase();
-      const user = comment.user;
-      const userName = user?.fullName || (user as any)?.name || user?.username || "";
+      const user = comment.user as UserLike | undefined;
+      const userName = user?.fullName || user?.name || user?.username || "";
       return body.includes(term) || userName.toLowerCase().includes(term);
     });
   }, [comments, search]);
@@ -78,9 +76,7 @@ export default function PostCommentsPage() {
   useEffect(() => {
     setPage((prev) => {
       const next = Math.min(prev, pages);
-      if (next !== prev) {
-        setShowMoreCount(0);
-      }
+      if (next !== prev) setShowMoreCount(0);
       return next;
     });
   }, [pages]);
@@ -105,7 +101,7 @@ export default function PostCommentsPage() {
       <div className="flex flex-col gap-6">
         <Link
           href="/panel/posts"
-          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+          className="inline-flex w-fit items-center gap-2 text-sm font-medium text-brand transition-colors hover:text-brand/80"
         >
           <ArrowLeft className="h-4 w-4" />
           Назад к списку публикаций
@@ -124,91 +120,83 @@ export default function PostCommentsPage() {
         />
       </div>
 
-      <div className="table-wrap mt-8">
-        <table className="table">
-          <thead className="thead">
-            <tr>
-              <th className="th">Комментарий</th>
-              <th className="th w-[320px]">Автор</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isCommentsLoading && (
+      {/* Таблица (desktop) */}
+      <div className="mt-8 hidden md:block">
+        <div className="table-wrap">
+          <table className="table">
+            <thead className="thead">
               <tr>
-                <td className="td" colSpan={2}>Загрузка…</td>
+                <th className="th">Комментарий</th>
+                <th className="th w-[320px]">Автор</th>
               </tr>
-            )}
-            {isCommentsError && (
-              <tr>
-                <td className="td text-danger" colSpan={2}>Не удалось загрузить комментарии</td>
-              </tr>
-            )}
-            {!isCommentsLoading && !isCommentsError && visibleComments.length === 0 && (
-              <tr>
-                <td className="td text-sub" colSpan={2}>Комментариев нет</td>
-              </tr>
-            )}
+            </thead>
+            <tbody>
+              {isCommentsLoading && (
+                <tr><td className="td" colSpan={2}>Загрузка…</td></tr>
+              )}
+              {isCommentsError && (
+                <tr><td className="td text-danger" colSpan={2}>Не удалось загрузить комментарии</td></tr>
+              )}
+              {!isCommentsLoading && !isCommentsError && visibleComments.length === 0 && (
+                <tr><td className="td text-sub" colSpan={2}>Комментариев нет</td></tr>
+              )}
 
-            {visibleComments.map((comment) => {
-              const userId = typeof comment.user?.id === "number" ? comment.user?.id : undefined;
-              const fetchedUser = userId ? authors[userId] : undefined;
-              const fallbackUser = comment.user as UserLike | undefined;
-              const displayUser: UserLike | undefined = fetchedUser ?? fallbackUser;
-              const avatarUrl = displayUser && typeof displayUser.image === "string" ? displayUser.image : "";
-              const fullName = formatUserName(displayUser);
-              const initials = userInitials(displayUser) || "?";
-
-              return (
-                <tr key={comment.id} className="tr align-top">
-                  <td className="td align-top">
-                    <p className="text-sm leading-5 text-ink">{comment.body}</p>
-                  </td>
-                  <td className="td align-top">
-                    <div className="flex items-center gap-3">
-                      {avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt={fullName}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
-                          {initials}
+              {visibleComments.map((comment) => {
+                const { avatarUrl, fullName, initials } = resolveCommentUser(comment, authors);
+                return (
+                  <tr key={comment.id} className="tr align-top">
+                    <td className="td align-top">
+                      <p className="text-sm leading-5 text-ink">{comment.body}</p>
+                    </td>
+                    <td className="td align-top">
+                      <div className="flex items-center gap-3">
+                        {avatarUrl ? (
+                          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
+                            {initials}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium leading-tight text-ink">{fullName}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-medium leading-tight text-ink">{fullName}</div>
                       </div>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* Список (mobile) */}
+      <div className="mt-8 md:hidden">
+        <MobileCommentsList
+          comments={visibleComments}
+          authors={authors}
+          isLoading={isCommentsLoading}
+          isError={isCommentsError}
+        />
+      </div>
+
+      {/* Пагинация + Показать ещё */}
       <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex justify-start">
-          {!isCommentsLoading
-            && !isCommentsError
-            && showMoreCount === 0
-            && (skip + BASE_PAGE_SIZE) < total && (
-              <button
-                type="button"
-                className="show-more-button"
-                onClick={() => {
-                  const remaining = Math.max(0, total - (skip + BASE_PAGE_SIZE));
-                  if (remaining <= 0) return;
-                  const increment = Math.min(BASE_PAGE_SIZE, remaining);
-                  setShowMoreCount(increment);
-                }}
-              >
-                Показать ещё <span className="show-more-button__number">10</span>
-              </button>
-            )}
+          {!isCommentsLoading && !isCommentsError && showMoreCount === 0 && (skip + BASE_PAGE_SIZE) < total && (
+            <button
+              type="button"
+              className="show-more-button"
+              onClick={() => {
+                const remaining = Math.max(0, total - (skip + BASE_PAGE_SIZE));
+                if (remaining <= 0) return;
+                const increment = Math.min(BASE_PAGE_SIZE, remaining);
+                setShowMoreCount(increment);
+              }}
+            >
+              Показать ещё <span className="show-more-button__number">10</span>
+            </button>
+          )}
         </div>
 
         <Pagination page={page} pages={pages} onChange={handleChangePage} />
@@ -216,6 +204,8 @@ export default function PostCommentsPage() {
     </div>
   );
 }
+
+/* ===== Pagination ===== */
 
 function Pagination({
   page,
@@ -272,11 +262,14 @@ function PaginationButton({
   icon?: "prev" | "next";
   label?: string;
 }) {
-  const content = icon === "prev"
-    ? <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-    : icon === "next"
-      ? <ChevronRight className="h-4 w-4" aria-hidden="true" />
-      : children;
+  const content =
+    icon === "prev" ? (
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+    ) : icon === "next" ? (
+      <ChevronRight className="h-4 w-4" aria-hidden />
+    ) : (
+      children
+    );
 
   return (
     <button
@@ -292,15 +285,69 @@ function PaginationButton({
   );
 }
 
+/* ===== Mobile ===== */
+
+function MobileCommentsList({
+  comments,
+  authors,
+  isLoading,
+  isError,
+}: {
+  comments: ExtendedComment[];
+  authors: Record<number, User>;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  if (isLoading) return <div className="mobile-comments-empty">Загрузка…</div>;
+  if (isError) return <div className="mobile-comments-empty text-danger">Не удалось загрузить комментарии</div>;
+  if (comments.length === 0) return <div className="mobile-comments-empty text-sub">Комментариев нет</div>;
+
+  return (
+    <div className="mobile-comment-list">
+      {comments.map((comment) => (
+        <MobileCommentCard key={comment.id} comment={comment} authors={authors} />
+      ))}
+    </div>
+  );
+}
+
+function MobileCommentCard({
+  comment,
+  authors,
+}: {
+  comment: ExtendedComment;
+  authors: Record<number, User>;
+}) {
+  const { avatarUrl, fullName, initials } = resolveCommentUser(comment, authors);
+
+  return (
+    <div className="mobile-comment-card">
+      <div className="mobile-comment-card__author">
+        {avatarUrl ? (
+          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
+        ) : (
+          <div className="mobile-comment-card__avatar-fallback">{initials}</div>
+        )}
+        <div className="mobile-comment-card__author-name">{fullName}</div>
+      </div>
+
+      <div className="mobile-comment-card__body">{comment.body}</div>
+    </div>
+  );
+}
+
+/* ===== Data helpers ===== */
+
 function useCommentAuthorsMap(comments: ExtendedComment[]) {
   const userIds = useMemo(
-    () => Array.from(
-      new Set(
-        comments
-          .map((comment) => comment.user?.id)
-          .filter((id): id is number => typeof id === "number"),
+    () =>
+      Array.from(
+        new Set(
+          comments
+            .map((comment) => comment.user?.id)
+            .filter((id): id is number => typeof id === "number"),
+        ),
       ),
-    ),
     [comments],
   );
 
@@ -319,4 +366,17 @@ function useCommentAuthorsMap(comments: ExtendedComment[]) {
   });
 
   return data ?? ({} as Record<number, User>);
+}
+
+function resolveCommentUser(comment: ExtendedComment, authors: Record<number, User>) {
+  const userId = typeof comment.user?.id === "number" ? comment.user.id : undefined;
+  const fetchedUser = userId ? authors[userId] : undefined;
+  const fallbackUser = comment.user as UserLike | undefined;
+  const displayUser: UserLike | undefined = fetchedUser ?? fallbackUser;
+
+  const avatarUrl = displayUser && typeof displayUser.image === "string" ? displayUser.image : "";
+  const fullName = formatUserName(displayUser);
+  const initials = userInitials(displayUser) || "?";
+
+  return { avatarUrl, fullName, initials };
 }

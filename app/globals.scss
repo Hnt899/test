@@ -35,7 +35,7 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .td          { @apply p-3 align-top border-b border-line; }
   .tr:hover    { @apply bg-gray-50; }
 
-  /* Пагинация — стиль Codex */
+  /* Пагинация */
   .pagination         { @apply flex justify-end; }
   .pagination-group   { @apply inline-flex items-center overflow-hidden rounded-xl border-2 border-brand bg-transparent; }
   .pagination-button  { @apply flex h-10 w-12 items-center justify-center text-sm font-semibold text-brand transition-colors bg-transparent; }
@@ -87,6 +87,15 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .mobile-post-card__metric { @apply inline-flex items-center gap-1 font-semibold text-sub; }
   .mobile-post-card__metric span { @apply text-ink; }
   .mobile-post-card .comments-link { @apply h-8 w-8; }
+
+  /* Мобильные комментарии */
+  .mobile-comments-empty { @apply rounded-2xl border border-dashed border-line/70 bg-white px-4 py-10 text-center text-sm font-medium; }
+  .mobile-comment-list   { @apply flex flex-col gap-3; }
+  .mobile-comment-card   { @apply space-y-3 rounded-2xl border border-line bg-white p-4 shadow-card; }
+  .mobile-comment-card__author { @apply flex items-center gap-3; }
+  .mobile-comment-card__author-name { @apply text-sm font-semibold text-ink; }
+  .mobile-comment-card__avatar-fallback { @apply flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand; }
+  .mobile-comment-card__body { @apply text-sm leading-5 text-ink; }
 
   /* Sidebar */
   .sidebar  { @apply h-screen sticky top-0 bg-white border-r border-line p-6; }
