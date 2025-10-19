@@ -4,7 +4,12 @@ export type Admin = {
   id: number;
   firstName: string;
   lastName: string;
+  maidenName?: string;
   email: string;
+  birthDate?: string;
+  age?: number;
+  gender?: string;
+  image?: string;
 };
 
 export type AdminsResponse = {
