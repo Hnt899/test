@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import { usePosts } from "@/shared/hooks/usePosts";
 import { fetchUserById, type User } from "@/shared/api-services/users";
@@ -165,16 +165,12 @@ export default function PostsPage() {
 
   const handleChangePage = (nextPage: number, force = false) => {
     const clamped = Math.min(Math.max(nextPage, 1), pages);
-    if (!force && clamped === page) {
-      return;
-    }
+    if (!force && clamped === page) return;
     setPage(clamped);
     setShowMoreCount(0);
   };
 
-  const resetToFirstPage = () => {
-    handleChangePage(1, true);
-  };
+  const resetToFirstPage = () => handleChangePage(1, true);
 
   const handleToggleSort = (field: SortField) => {
     resetToFirstPage();
@@ -197,19 +193,23 @@ export default function PostsPage() {
     <div className="page">
       <div className="flex flex-col gap-4">
         <div>
-          <h1>Публикации</h1>
-          <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight">Публикации</h1>
+          <p className="mt-1 text-sm font-semibold text-sub">Управление публикациями пользователей</p>
         </div>
 
-        <input
-          className="input max-w-md"
-          placeholder="Поиск по публикациям"
-          value={q}
-          onChange={(e) => {
-            resetToFirstPage();
-            setQ(e.target.value);
-          }}
-        />
+        {/* Поле поиска с иконкой */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sub" />
+          <input
+            className="input pl-10 w-full"
+            placeholder="Поиск по публикациям"
+            value={q}
+            onChange={(e) => {
+              resetToFirstPage();
+              setQ(e.target.value);
+            }}
+          />
+        </div>
       </div>
 
       {/* таблица */}
@@ -220,27 +220,9 @@ export default function PostsPage() {
               <SortableHeader field="id" label="ID" sort={sort} onToggle={handleToggleSort} />
               <th className="th">Пост</th>
               <th className="th">Автор</th>
-              <SortableHeader
-                field="views"
-                label="Просмотры"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="likes"
-                label="Лайки"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="comments"
-                label="Комментарии"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
+              <SortableHeader field="views" label="Просмотры" sort={sort} onToggle={handleToggleSort} align="right" />
+              <SortableHeader field="likes" label="Лайки" sort={sort} onToggle={handleToggleSort} align="right" />
+              <SortableHeader field="comments" label="Комментарии" sort={sort} onToggle={handleToggleSort} align="right" />
               <th className="th text-right" aria-label="Комментарий переход" />
             </tr>
           </thead>
@@ -257,10 +239,6 @@ export default function PostsPage() {
               const fullName = formatUserName(author);
               const initials = userInitials(author) || (author ? author.firstName?.[0] ?? "" : "");
 
-              const views = getPostViews(post);
-              const likes = getPostLikes(post);
-              const comments = getPostComments(post);
-
               return (
                 <tr key={post.id} className="tr">
                   <td className="td font-medium text-sub">#{post.id}</td>
@@ -270,13 +248,7 @@ export default function PostsPage() {
                   <td className="td">
                     <div className="flex items-center gap-3">
                       {avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt={fullName}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
+                        <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
                       ) : (
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
                           {initials || "?"}
@@ -287,17 +259,17 @@ export default function PostsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(views)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(likes)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(comments)}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostViews(post))}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostLikes(post))}</td>
+                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostComments(post))}</td>
                   <td className="td text-right">
                     <CommentsLink href={`/panel/posts/${post.id}/comments`} />
                   </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* пагинация */}
@@ -321,8 +293,6 @@ export default function PostsPage() {
 
         <Pagination page={page} pages={pages} onChange={handleChangePage} />
       </div>
-
-      {/* модалка комментариев */}
     </div>
   );
 }
@@ -348,18 +318,12 @@ function SortableHeader({
       ? <ArrowUp className="h-4 w-4 text-brand" />
       : <ArrowDown className="h-4 w-4 text-brand" />;
 
-  const buttonClasses = [
-    "flex w-full items-center gap-1 text-sm font-medium transition-colors",
-    align === "right" ? "justify-end text-right" : "justify-start text-left",
-    isActive ? "text-brand" : "text-sub hover:text-brand",
-  ].join(" ");
-
   return (
     <th className={`th ${align === "right" ? "text-right" : "text-left"}`}>
       <button
         type="button"
         onClick={() => onToggle(field)}
-        className={buttonClasses}
+        className={`flex w-full items-center gap-1 text-sm font-medium transition-colors ${align === "right" ? "justify-end" : "justify-start"} ${isActive ? "text-brand" : "text-sub hover:text-brand"}`}
       >
         <span>{label}</span>
         {icon}
@@ -382,27 +346,13 @@ function Pagination({
   return (
     <div className="pagination">
       <div className="pagination-group divide-x-2 divide-brand">
-        <PaginationButton
-          label="Предыдущая страница"
-          disabled={page <= 1}
-          onClick={() => onChange(Math.max(1, page - 1))}
-          icon="prev"
-        />
+        <PaginationButton label="Предыдущая страница" disabled={page <= 1} onClick={() => onChange(Math.max(1, page - 1))} icon="prev" />
         {numbers.map((n) => (
-          <PaginationButton
-            key={n}
-            active={n === page}
-            onClick={() => onChange(n)}
-          >
+          <PaginationButton key={n} active={n === page} onClick={() => onChange(n)}>
             {n}
           </PaginationButton>
         ))}
-        <PaginationButton
-          label="Следующая страница"
-          disabled={page >= pages}
-          onClick={() => onChange(Math.min(pages, page + 1))}
-          icon="next"
-        />
+        <PaginationButton label="Следующая страница" disabled={page >= pages} onClick={() => onChange(Math.min(pages, page + 1))} icon="next" />
       </div>
     </div>
   );
@@ -445,11 +395,7 @@ function PaginationButton({
 
 function CommentsLink({ href }: { href: string }) {
   return (
-    <Link
-      href={href}
-      className="comments-link"
-      aria-label="Открыть комментарии к публикации"
-    >
+    <Link href={href} className="comments-link" aria-label="Открыть комментарии к публикации">
       <ChevronRight className="h-5 w-5" />
     </Link>
   );
