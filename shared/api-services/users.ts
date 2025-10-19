@@ -38,6 +38,10 @@ export async function fetchUsers(params?: { q?: string; limit?: number; skip?: n
   return clientGet<UsersResponse>(path);
 }
 
+export async function fetchUserById(id: number) {
+  return clientGet<User>(`/users/${id}`);
+}
+
 // ---- CRUD (тест-API симулирует изменения и возвращает успешный ответ) ----
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "https://test-api.live-server.xyz";
 
