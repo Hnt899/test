@@ -2,16 +2,16 @@
 
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import CommentsModal from "@/shared/components/CommentsModal";
 import { usePosts } from "@/shared/hooks/usePosts";
 import { fetchUserById, type User } from "@/shared/api-services/users";
 import type { Post } from "@/shared/api-services/posts";
 
-const PAGE_SIZES = [10, 20, 50];
+const BASE_PAGE_SIZE = 10;
 const NUMBER_FORMAT = new Intl.NumberFormat("ru-RU");
 
 type SortField = "id" | "views" | "likes" | "comments";
@@ -116,45 +116,38 @@ function useAuthorsMap(posts: Post[]) {
 
 export default function PostsPage() {
   const [q, setQ] = useState("");
-  const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<SortState>(null);
   const [randomSeed, setRandomSeed] = useState<number | null>(null);
   const [openComments, setOpenComments] = useState<null | { postId: number; title: string }>(null);
-  const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
-  const pageSizeRef = useRef<HTMLDivElement | null>(null);
+  const [showMoreCount, setShowMoreCount] = useState(0);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (pageSizeRef.current && !pageSizeRef.current.contains(event.target as Node)) {
-        setIsPageSizeOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  const skip = (page - 1) * BASE_PAGE_SIZE;
+  const limit = BASE_PAGE_SIZE + showMoreCount;
 
   const params = useMemo(() => {
-    const skip = (page - 1) * pageSize;
     return {
       q: q.trim() || undefined,
-      limit: pageSize,
+      limit,
       skip,
       sortBy: sort ? SORT_API_FIELD[sort.field] : undefined,
       order: sort?.order,
     };
-  }, [q, page, pageSize, sort]);
+  }, [q, limit, skip, sort]);
 
   const { data, isLoading, isError } = usePosts(params);
   const posts = useMemo(() => data?.posts ?? [], [data]);
   const total = data?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const pages = Math.max(1, Math.ceil(total / BASE_PAGE_SIZE));
 
   useEffect(() => {
-    setPage((prev) => Math.min(prev, pages));
+    setPage((prev) => {
+      const next = Math.min(prev, pages);
+      if (next !== prev) {
+        setShowMoreCount(0);
+      }
+      return next;
+    });
   }, [pages]);
 
   const sortedPosts = useMemo(() => {
@@ -181,8 +174,19 @@ export default function PostsPage() {
 
   const authors = useAuthorsMap(sortedPosts);
 
+  const handleChangePage = (nextPage: number, force = false) => {
+    const clamped = Math.min(Math.max(nextPage, 1), pages);
+    if (!force && clamped === page) return;
+    setPage(clamped);
+    setShowMoreCount(0);
+  };
+
+  const resetToFirstPage = () => {
+    handleChangePage(1, true);
+  };
+
   const handleToggleSort = (field: SortField) => {
-    setPage(1);
+    resetToFirstPage();
     setSort((prev) => {
       if (!prev || prev.field !== field) {
         setRandomSeed(null);
@@ -210,7 +214,10 @@ export default function PostsPage() {
           className="input max-w-md"
           placeholder="Поиск по публикациям"
           value={q}
-          onChange={(e) => { setPage(1); setQ(e.target.value); }}
+          onChange={(e) => {
+            resetToFirstPage();
+            setQ(e.target.value);
+          }}
         />
       </div>
 
@@ -286,7 +293,6 @@ export default function PostsPage() {
                       )}
                       <div>
                         <div className="font-medium leading-tight">{fullName}</div>
-                        <div className="text-xs text-sub">ID: {post.userId}</div>
                       </div>
                     </div>
                   </td>
@@ -307,38 +313,24 @@ export default function PostsPage() {
 
       {/* пагинация */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <Pagination page={page} pages={pages} onChange={setPage} />
-
-        <div className="relative" ref={pageSizeRef}>
-          <button
-            type="button"
-            className="page-size-button"
-            onClick={() => setIsPageSizeOpen((prev) => !prev)}
-          >
-            <span className="text-sub mr-2">Показывать на странице</span>
-            <span className="text-base font-semibold text-ink">{pageSize}</span>
-            <ChevronDown className="ml-1 h-4 w-4 text-brand" />
-          </button>
-
-          {isPageSizeOpen && (
-            <div className="page-size-menu">
-              {PAGE_SIZES.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  className={`page-size-option${size === pageSize ? " active" : ""}`}
-                  onClick={() => {
-                    setIsPageSizeOpen(false);
-                    setPage(1);
-                    setPageSize(size);
-                  }}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
+        <div className="flex justify-start">
+          {!isLoading && !isError && showMoreCount === 0 && (skip + BASE_PAGE_SIZE) < total && (
+            <button
+              type="button"
+              className="show-more-button"
+              onClick={() => {
+                const available = Math.max(0, total - (skip + BASE_PAGE_SIZE));
+                if (available <= 0) return;
+                const increment = Math.min(BASE_PAGE_SIZE, available);
+                setShowMoreCount(increment);
+              }}
+            >
+              Показать ещё 10
+            </button>
           )}
         </div>
+
+        <Pagination page={page} pages={pages} onChange={handleChangePage} />
       </div>
 
       {/* модалка комментариев */}
@@ -412,20 +404,14 @@ function Pagination({
         onClick={() => onChange(Math.max(1, page - 1))}
         icon="prev"
       />
-      {numbers.map((n, index) => (
-        typeof n === "number"
-          ? (
-            <PaginationButton
-              key={n}
-              active={n === page}
-              onClick={() => onChange(n)}
-            >
-              {n}
-            </PaginationButton>
-          )
-          : (
-            <span key={`gap-${index}`} className="pagination-ellipsis">…</span>
-          )
+      {numbers.map((n) => (
+        <PaginationButton
+          key={n}
+          active={n === page}
+          onClick={() => onChange(n)}
+        >
+          {n}
+        </PaginationButton>
       ))}
       <PaginationButton
         label="Следующая страница"
@@ -473,34 +459,19 @@ function PaginationButton({
 }
 
 function buildPagination(current: number, total: number) {
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, i) => i + 1);
+  const windowSize = Math.min(3, total);
+  let start = current - 1;
+
+  if (start < 1) {
+    start = 1;
   }
 
-  const pages = new Set<number>();
-  pages.add(1);
-  pages.add(total);
-  pages.add(current);
-  pages.add(current - 1);
-  pages.add(current + 1);
-
-  const sorted = Array.from(pages)
-    .filter((n) => n >= 1 && n <= total)
-    .sort((a, b) => a - b);
-
-  const result: Array<number | "gap"> = [];
-  for (let i = 0; i < sorted.length; i += 1) {
-    const value = sorted[i];
-    if (i > 0) {
-      const prev = sorted[i - 1];
-      if (value - prev > 1) {
-        result.push("gap");
-      }
-    }
-    result.push(value);
+  const maxStart = total - windowSize + 1;
+  if (start > maxStart) {
+    start = Math.max(1, maxStart);
   }
 
-  return result;
+  return Array.from({ length: windowSize }, (_, index) => start + index);
 }
 
 function CommentsLink({ onClick }: { onClick: () => void }) {
