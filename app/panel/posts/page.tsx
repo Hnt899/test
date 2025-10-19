@@ -176,9 +176,7 @@ export default function PostsPage() {
 
   const handleChangePage = (nextPage: number, force = false) => {
     const clamped = Math.min(Math.max(nextPage, 1), pages);
-    if (!force && clamped === page) {
-      return;
-    }
+    if (!force && clamped === page) return;
     setPage(clamped);
     setShowMoreCount(0);
   };
@@ -306,11 +304,11 @@ export default function PostsPage() {
                       onClick={() => setOpenComments({ postId: post.id, title: post.title })}
                     />
                   </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* пагинация */}
