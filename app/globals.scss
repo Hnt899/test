@@ -33,20 +33,19 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .td          { @apply p-3 align-top border-b border-line; }
   .tr:hover    { @apply bg-gray-50; }
 
-  /* Пагинация — версия Codex */
-  .pagination  { @apply flex items-center justify-end gap-2; }
+  /* Пагинация — стиль Codex */
+  .pagination         { @apply flex justify-end; }
+  .pagination-group   { @apply inline-flex items-center overflow-hidden rounded-xl border-2 border-brand bg-transparent; }
+  .pagination-button  { @apply flex h-10 w-12 items-center justify-center text-sm font-semibold text-brand transition-colors bg-transparent; }
+  .pagination-button:not(.active):not(.disabled):hover { @apply bg-brand/10; }
+  .pagination-button.active   { @apply bg-brand text-white; }
+  .pagination-button.disabled { @apply text-brand/30 cursor-not-allowed; }
+  .pagination-button.disabled:hover { @apply bg-transparent; }
 
-  .pagination-button {
-    @apply h-9 min-w-[36px] rounded-lg border border-line bg-white text-sm font-medium text-sub transition-colors;
-    @apply flex items-center justify-center hover:border-brand hover:bg-brand/10 hover:text-brand disabled:opacity-50 disabled:hover:bg-white;
-  }
-  .pagination-button.active { @apply border-brand bg-brand text-white; }
-
-  /* Кнопка "Показать ещё 10" — версия Codex */
-  .show-more-button {
-    @apply inline-flex h-10 items-center justify-center rounded-lg border border-line bg-white px-4 text-sm font-semibold text-sub transition-colors;
-    @apply hover:border-brand hover:bg-brand hover:text-white;
-  }
+  /* Кнопка "Показать ещё 10" — стиль Codex */
+  .show-more-button        { @apply inline-flex items-center gap-2 text-sm font-semibold text-sub transition-colors bg-transparent px-0 py-0; }
+  .show-more-button__number{ @apply text-brand; }
+  .show-more-button:hover  { @apply text-brand; }
 
   /* Ссылка-комментарии */
   .comments-link {
@@ -56,12 +55,13 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
 
 /* Sidebar */
 @layer components {
-  .sidebar    { @apply h-screen sticky top-0 bg-white border-r border-line p-6; }
-  .nav        { @apply flex flex-col gap-3 text-sm font-medium; }
-  .nav a      { @apply block hover:text-brand; }
-  .nav .sep   { @apply my-6 border-t border-line; }
+  .sidebar  { @apply h-screen sticky top-0 bg-white border-r border-line p-6; }
+  .nav      { @apply flex flex-col gap-3 text-sm font-medium; }
+  .nav a    { @apply block hover:text-brand; }
+  .nav .sep { @apply my-6 border-t border-line; }
 }
 
+/* Утилиты */
 @layer utilities {
   .line-clamp-2 {
     display: -webkit-box;

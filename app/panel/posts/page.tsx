@@ -204,7 +204,7 @@ export default function PostsPage() {
 
   return (
     <div className="page">
-      <div className="section flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1>Публикации</h1>
           <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
@@ -325,7 +325,7 @@ export default function PostsPage() {
                 setShowMoreCount(increment);
               }}
             >
-              Показать ещё 10
+              Показать ещё <span className="show-more-button__number">10</span>
             </button>
           )}
         </div>
@@ -398,27 +398,29 @@ function Pagination({
 
   return (
     <div className="pagination">
-      <PaginationButton
-        label="Предыдущая страница"
-        disabled={page <= 1}
-        onClick={() => onChange(Math.max(1, page - 1))}
-        icon="prev"
-      />
-      {numbers.map((n) => (
+      <div className="pagination-group divide-x-2 divide-brand">
         <PaginationButton
-          key={n}
-          active={n === page}
-          onClick={() => onChange(n)}
-        >
-          {n}
-        </PaginationButton>
-      ))}
-      <PaginationButton
-        label="Следующая страница"
-        disabled={page >= pages}
-        onClick={() => onChange(Math.min(pages, page + 1))}
-        icon="next"
-      />
+          label="Предыдущая страница"
+          disabled={page <= 1}
+          onClick={() => onChange(Math.max(1, page - 1))}
+          icon="prev"
+        />
+        {numbers.map((n) => (
+          <PaginationButton
+            key={n}
+            active={n === page}
+            onClick={() => onChange(n)}
+          >
+            {n}
+          </PaginationButton>
+        ))}
+        <PaginationButton
+          label="Следующая страница"
+          disabled={page >= pages}
+          onClick={() => onChange(Math.min(pages, page + 1))}
+          icon="next"
+        />
+      </div>
     </div>
   );
 }
@@ -447,7 +449,7 @@ function PaginationButton({
   return (
     <button
       type="button"
-      className={`pagination-button${active ? " active" : ""}`}
+      className={`pagination-button${active ? " active" : ""}${disabled ? " disabled" : ""}`}
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
