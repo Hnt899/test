@@ -88,6 +88,19 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .mobile-post-card__metric span { @apply text-ink; }
   .mobile-post-card .comments-link { @apply h-8 w-8; }
 
+  /* Мобильные администраторы */
+  .mobile-admins-empty { @apply rounded-2xl border border-dashed border-line/70 bg-white px-4 py-10 text-center text-sm font-medium; }
+  .mobile-admin-list  { @apply flex flex-col gap-3; }
+  .mobile-admin-card  { @apply space-y-3 rounded-2xl border border-line bg-white p-4 shadow-card; }
+  .mobile-admin-card__header { @apply flex items-start justify-between; }
+  .mobile-admin-card__avatar-image { @apply h-12 w-12 rounded-full object-cover; }
+  .mobile-admin-card__avatar-fallback { @apply flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-base font-semibold text-ink; }
+  .mobile-admin-card__name  { @apply text-base font-semibold leading-tight text-ink; }
+  .mobile-admin-card__email { @apply block text-sm font-medium text-brand transition-colors hover:text-brand/80 break-words; }
+  .mobile-admin-card__meta  { @apply grid grid-cols-2 gap-4; }
+  .mobile-admin-card__meta-label { @apply text-xs font-medium text-sub; }
+  .mobile-admin-card__meta-value { @apply mt-1 text-sm font-semibold text-ink leading-tight; }
+
   /* Мобильные комментарии */
   .mobile-comments-empty { @apply rounded-2xl border border-dashed border-line/70 bg-white px-4 py-10 text-center text-sm font-medium; }
   .mobile-comment-list   { @apply flex flex-col gap-3; }

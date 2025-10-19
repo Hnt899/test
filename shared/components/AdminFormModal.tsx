@@ -2,8 +2,6 @@
 
 
 import React, { useEffect, useMemo, useState } from "react";
-
-
 import { CircleUserRound, X } from "lucide-react";
 import Modal from "./Modal";
 import type { Admin } from "@/shared/api-services/admins";
@@ -109,9 +107,7 @@ export default function AdminFormModal({
       firstName: parsedName.firstName,
       lastName: parsedName.lastName,
       email: trimmedEmail,
-
       birthDate: toIsoDate(birthDate),
-
     });
   }
 
@@ -120,7 +116,7 @@ export default function AdminFormModal({
       open={open}
       onClose={onClose}
       hideHeader
-      
+
       dialogClassName="card w-[420px] max-w-[calc(100vw-48px)] rounded-[32px] border-none shadow-2xl"
       contentClassName="p-10"
 
@@ -130,7 +126,7 @@ export default function AdminFormModal({
           type="button"
           onClick={onClose}
 
-          className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center text-sub transition-colors hover:text-ink"
+          className="absolute right-5 top-5 inline-flex h-6 w-6 items-center justify-center text-sub transition-colors hover:text-ink"
           aria-label="Закрыть модальное окно"
         >
           <X className="h-5 w-5" strokeWidth={2.25} />
@@ -143,7 +139,6 @@ export default function AdminFormModal({
         </div>
 
         <form className="mt-7 flex w-full flex-col gap-5 text-left" onSubmit={handleSubmit}>
-
           <label className="flex flex-col gap-1">
             <span className="text-sm font-medium text-sub">ФИО</span>
             <input
@@ -183,9 +178,9 @@ export default function AdminFormModal({
 
           <button
             type="submit"
+
             className="mt-1 h-12 w-full rounded-full bg-blue-600 text-white text-sm font-semibold
              hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-
             disabled={loading}
           >
             {loading ? "Сохраняем…" : "Сохранить"}
