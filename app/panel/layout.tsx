@@ -3,10 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PropsWithChildren } from "react";
+import { Crown, Newspaper, Users } from "lucide-react";
 
 import MobileTopBar from "@/shared/components/MobileTopBar";
 import MobileTabBar from "@/shared/components/MobileTabBar";
 import SidebarProfileCard from "@/shared/components/SidebarProfileCard";
+
+const navItems = [
+  {
+    href: "/panel/posts",
+    label: "Публикации",
+    icon: Newspaper,
+  },
+  {
+    href: "/panel/admins",
+    label: "Администраторы",
+    icon: Crown,
+  },
+  {
+    href: "/panel/users",
+    label: "Пользователи",
+    icon: Users,
+  },
+];
 
 export default function PanelLayout({ children }: PropsWithChildren) {
   const pathname = usePathname();
@@ -22,28 +41,20 @@ export default function PanelLayout({ children }: PropsWithChildren) {
       <div className="hidden sm:grid sm:grid-cols-[260px_1fr] min-h-screen">
         {/* Sidebar */}
         <aside className="sidebar h-screen sticky top-0 border-r bg-white px-6 pt-6 pb-3 flex flex-col">
-          <div className="text-xl font-bold mb-8 text-[#0F62FE]">BTX•</div>
+          <div className="mb-8 text-center text-2xl font-extrabold text-[#0F62FE]">BTX•</div>
 
           {/* В меню убрал "Главная" по макету */}
-          <nav className="flex flex-col gap-3 text-sm font-medium">
-            <Link
-              href="/panel/admins"
-              className={navClass(pathname.startsWith("/panel/admins"))}
-            >
-              Администраторы
-            </Link>
-            <Link
-              href="/panel/users"
-              className={navClass(pathname.startsWith("/panel/users"))}
-            >
-              Пользователи
-            </Link>
-            <Link
-              href="/panel/posts"
-              className={navClass(pathname.startsWith("/panel/posts"))}
-            >
-              Публикации
-            </Link>
+          <nav className="flex flex-col gap-2">
+            {navItems.map(({ href, label, icon: Icon }) => {
+              const active = pathname.startsWith(href);
+
+              return (
+                <Link key={href} href={href} className={navClass(active)}>
+                  <Icon className={iconClass(active)} />
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* spacer чтобы карточка уехала вниз */}
@@ -70,8 +81,20 @@ export default function PanelLayout({ children }: PropsWithChildren) {
 }
 
 function navClass(active: boolean) {
-  return [
-    "block rounded-lg px-3 py-2 transition-colors",
-    active ? "bg-[#EAF3FF] text-[#0F62FE]" : "hover:text-[#0F62FE]",
-  ].join(" ");
+  const base = "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors";
+  const activeClasses = active
+    ? "bg-[#E3EEFF] text-[#0F62FE]"
+    : "text-[#24324D] hover:bg-[#E3EEFF] hover:text-[#0F62FE]";
+
+  return `${base} ${activeClasses}`;
+}
+
+function iconClass(active: boolean) {
+  const base = "h-5 w-5 transition-colors";
+
+  if (active) {
+    return `${base} text-[#0F62FE]`;
+  }
+
+  return `${base} text-[#9AA4B2] group-hover:text-[#0F62FE]`;
 }
