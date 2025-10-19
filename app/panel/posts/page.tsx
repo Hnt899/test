@@ -298,11 +298,11 @@ export default function PostsPage() {
                       onClick={() => setOpenComments({ postId: post.id, title: post.title })}
                     />
                   </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* пагинация */}
