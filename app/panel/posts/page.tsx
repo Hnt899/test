@@ -15,6 +15,7 @@ import {
   Eye,
   Heart,
   MessageCircle,
+  Search,
 } from "lucide-react";
 
 import { usePosts } from "@/shared/hooks/usePosts";
@@ -50,17 +51,17 @@ function extractNumber(value: unknown) {
 function getPostViews(post: Post) {
   return (
     extractNumber(post.views)
-    ?? extractNumber(post["viewsCount"])
-    ?? extractNumber(post["viewCount"])
+    ?? extractNumber((post as any)["viewsCount"])
+    ?? extractNumber((post as any)["viewCount"])
     ?? 0
   );
 }
 
 function getPostLikes(post: Post) {
   if (typeof post.likes === "number") return post.likes;
-  if (typeof post.reactions === "number") return post.reactions;
-  if (post.reactions && typeof post.reactions === "object") {
-    const reactionObj = post.reactions as Record<string, unknown>;
+  if (typeof (post as any).reactions === "number") return (post as any).reactions;
+  if ((post as any).reactions && typeof (post as any).reactions === "object") {
+    const reactionObj = (post as any).reactions as Record<string, unknown>;
     return (
       extractNumber(reactionObj.likes)
       ?? extractNumber(reactionObj.total)
@@ -69,8 +70,8 @@ function getPostLikes(post: Post) {
     );
   }
   return (
-    extractNumber(post["likesCount"])
-    ?? extractNumber(post["thumbsUp"])
+    extractNumber((post as any)["likesCount"])
+    ?? extractNumber((post as any)["thumbsUp"])
     ?? 0
   );
 }
@@ -78,10 +79,10 @@ function getPostLikes(post: Post) {
 function getPostComments(post: Post) {
   return (
     extractNumber(post.comments)
-    ?? extractNumber((post.reactions as Record<string, unknown> | undefined)?.comments)
-    ?? extractNumber(post["commentsCount"])
-    ?? extractNumber(post["commentCount"])
-    ?? extractNumber(post["totalComments"])
+    ?? extractNumber(((post as any).reactions as Record<string, unknown> | undefined)?.comments)
+    ?? extractNumber((post as any)["commentsCount"])
+    ?? extractNumber((post as any)["commentCount"])
+    ?? extractNumber((post as any)["totalComments"])
     ?? 0
   );
 }
@@ -102,7 +103,10 @@ function getSortValue(post: Post, field: SortField) {
 }
 
 function useAuthorsMap(posts: Post[]) {
-  const userIds = useMemo(() => Array.from(new Set(posts.map((p) => p.userId).filter(Boolean))), [posts]);
+  const userIds = useMemo(
+    () => Array.from(new Set(posts.map((p) => p.userId).filter(Boolean))),
+    [posts],
+  );
 
   const { data } = useQuery({
     queryKey: ["post-authors", userIds],
@@ -150,9 +154,7 @@ export default function PostsPage() {
   useEffect(() => {
     setPage((prev) => {
       const next = Math.min(prev, pages);
-      if (next !== prev) {
-        setShowMoreCount(0);
-      }
+      if (next !== prev) setShowMoreCount(0);
       return next;
     });
   }, [pages]);
@@ -171,7 +173,6 @@ export default function PostsPage() {
       if (typeof aValue === "number" && typeof bValue === "number") {
         return (aValue - bValue) * direction;
       }
-
       const aString = String(aValue ?? "");
       const bString = String(bValue ?? "");
       return aString.localeCompare(bString) * direction;
@@ -184,16 +185,12 @@ export default function PostsPage() {
 
   const handleChangePage = (nextPage: number, force = false) => {
     const clamped = Math.min(Math.max(nextPage, 1), pages);
-    if (!force && clamped === page) {
-      return;
-    }
+    if (!force && clamped === page) return;
     setPage(clamped);
     setShowMoreCount(0);
   };
 
-  const resetToFirstPage = () => {
-    handleChangePage(1, true);
-  };
+  const resetToFirstPage = () => handleChangePage(1, true);
 
   const handleToggleSort = (field: SortField) => {
     resetToFirstPage();
@@ -213,29 +210,32 @@ export default function PostsPage() {
   };
 
   useEffect(() => {
-    if (isSortMenuOpen) {
-      setIsSortMenuOpen(false);
-    }
+    if (isSortMenuOpen) setIsSortMenuOpen(false);
   }, [sort, isRandomSort, isSortMenuOpen]);
 
   return (
     <div className="page">
       <div className="flex flex-col gap-4">
         <div>
-          <h1>Публикации</h1>
-          <p className="mt-1 text-sm text-sub">Управление публикациями пользователей</p>
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight">Публикации</h1>
+          <p className="mt-1 text-sm font-semibold text-sub">Управление публикациями пользователей</p>
         </div>
 
-        <input
-          className="input max-w-md"
-          placeholder="Поиск по публикациям"
-          value={q}
-          onChange={(e) => {
-            resetToFirstPage();
-            setQ(e.target.value);
-          }}
-        />
+        {/* Поле поиска с иконкой */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-sub" />
+          <input
+            className="input pl-10 w-full"
+            placeholder="Поиск по публикациям"
+            value={q}
+            onChange={(e) => {
+              resetToFirstPage();
+              setQ(e.target.value);
+            }}
+          />
+        </div>
 
+        {/* Мобильное меню сортировки */}
         <div className="md:hidden">
           <MobileSortMenu
             sort={sort}
@@ -247,7 +247,7 @@ export default function PostsPage() {
         </div>
       </div>
 
-      {/* таблица */}
+      {/* Таблица для ≥ md */}
       <div className="hidden md:block">
         <div className="table-wrap">
           <table className="table">
@@ -255,98 +255,66 @@ export default function PostsPage() {
               <tr>
                 <SortableHeader field="id" label="ID" sort={sort} onToggle={handleToggleSort} />
                 <th className="th">Пост</th>
-              <th className="th">Автор</th>
-              <SortableHeader
-                field="views"
-                label="Просмотры"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="likes"
-                label="Лайки"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <SortableHeader
-                field="comments"
-                label="Комментарии"
-                sort={sort}
-                onToggle={handleToggleSort}
-                align="right"
-              />
-              <th className="th text-right" aria-label="Комментарий переход" />
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && <tr><td className="td" colSpan={7}>Загрузка…</td></tr>}
-            {isError &&   <tr><td className="td text-danger" colSpan={7}>Ошибка загрузки</td></tr>}
-            {!isLoading && !isError && sortedPosts.length === 0 && (
-              <tr><td className="td text-sub" colSpan={7}>Ничего не найдено</td></tr>
-            )}
+                <th className="th">Автор</th>
+                <SortableHeader field="views" label="Просмотры" sort={sort} onToggle={handleToggleSort} align="right" />
+                <SortableHeader field="likes" label="Лайки" sort={sort} onToggle={handleToggleSort} align="right" />
+                <SortableHeader field="comments" label="Комментарии" sort={sort} onToggle={handleToggleSort} align="right" />
+                <th className="th text-right" aria-label="Комментарий переход" />
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading && <tr><td className="td" colSpan={7}>Загрузка…</td></tr>}
+              {isError &&   <tr><td className="td text-danger" colSpan={7}>Ошибка загрузки</td></tr>}
+              {!isLoading && !isError && sortedPosts.length === 0 && (
+                <tr><td className="td text-sub" colSpan={7}>Ничего не найдено</td></tr>
+              )}
 
-            {sortedPosts.map((post) => {
-              const author = authors[post.userId];
-              const avatarUrl = typeof author?.image === "string" ? author.image : "";
-              const fullName = formatUserName(author);
-              const initials = userInitials(author) || (author ? author.firstName?.[0] ?? "" : "");
+              {sortedPosts.map((post) => {
+                const author = authors[post.userId];
+                const avatarUrl = typeof author?.image === "string" ? author.image : "";
+                const fullName = formatUserName(author);
+                const initials = userInitials(author) || (author ? author.firstName?.[0] ?? "" : "");
 
-              const views = getPostViews(post);
-              const likes = getPostLikes(post);
-              const comments = getPostComments(post);
-
-              return (
-                <tr key={post.id} className="tr">
-                  <td className="td font-medium text-sub">#{post.id}</td>
-                  <td className="td max-w-[360px]">
-                    <div className="font-medium text-sm leading-5 text-ink line-clamp-2">{post.title}</div>
-                  </td>
-                  <td className="td">
-                    <div className="flex items-center gap-3">
-                      {avatarUrl ? (
-                        <Image
-                          src={avatarUrl}
-                          alt={fullName}
-                          width={40}
-                          height={40}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
-                          {initials || "?"}
+                return (
+                  <tr key={post.id} className="tr">
+                    <td className="td font-medium text-sub">#{post.id}</td>
+                    <td className="td max-w-[360px]">
+                      <div className="font-medium text-sm leading-5 text-ink line-clamp-2">{post.title}</div>
+                    </td>
+                    <td className="td">
+                      <div className="flex items-center gap-3">
+                        {avatarUrl ? (
+                          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
+                            {initials || "?"}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium leading-tight">{fullName}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-medium leading-tight">{fullName}</div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(views)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(likes)}</td>
-                  <td className="td text-right font-medium">{NUMBER_FORMAT.format(comments)}</td>
-                  <td className="td text-right">
-                    <CommentsLink href={`/panel/posts/${post.id}/comments`} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostViews(post))}</td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostLikes(post))}</td>
+                    <td className="td text-right font-medium">{NUMBER_FORMAT.format(getPostComments(post))}</td>
+                    <td className="td text-right">
+                      <CommentsLink href={`/panel/posts/${post.id}/comments`} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
 
+      {/* Мобильный список карточек */}
       <div className="md:hidden">
-        <MobilePostsList
-          posts={sortedPosts}
-          authors={authors}
-          isLoading={isLoading}
-          isError={isError}
-        />
+        <MobilePostsList posts={sortedPosts} authors={authors} isLoading={isLoading} isError={isError} />
       </div>
 
-      {/* пагинация */}
+      {/* Пагинация */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex justify-start">
           {!isLoading && !isError && showMoreCount === 0 && (skip + BASE_PAGE_SIZE) < total && (
@@ -367,8 +335,6 @@ export default function PostsPage() {
 
         <Pagination page={page} pages={pages} onChange={handleChangePage} />
       </div>
-
-      {/* модалка комментариев */}
     </div>
   );
 }
@@ -394,18 +360,12 @@ function SortableHeader({
       ? <ArrowUp className="h-4 w-4 text-brand" />
       : <ArrowDown className="h-4 w-4 text-brand" />;
 
-  const buttonClasses = [
-    "flex w-full items-center gap-1 text-sm font-medium transition-colors",
-    align === "right" ? "justify-end text-right" : "justify-start text-left",
-    isActive ? "text-brand" : "text-sub hover:text-brand",
-  ].join(" ");
-
   return (
     <th className={`th ${align === "right" ? "text-right" : "text-left"}`}>
       <button
         type="button"
         onClick={() => onToggle(field)}
-        className={buttonClasses}
+        className={`flex w-full items-center gap-1 text-sm font-medium transition-colors ${align === "right" ? "justify-end" : "justify-start"} ${isActive ? "text-brand" : "text-sub hover:text-brand"}`}
       >
         <span>{label}</span>
         {icon}
@@ -428,27 +388,13 @@ function Pagination({
   return (
     <div className="pagination">
       <div className="pagination-group divide-x-2 divide-brand">
-        <PaginationButton
-          label="Предыдущая страница"
-          disabled={page <= 1}
-          onClick={() => onChange(Math.max(1, page - 1))}
-          icon="prev"
-        />
+        <PaginationButton label="Предыдущая страница" disabled={page <= 1} onClick={() => onChange(Math.max(1, page - 1))} icon="prev" />
         {numbers.map((n) => (
-          <PaginationButton
-            key={n}
-            active={n === page}
-            onClick={() => onChange(n)}
-          >
+          <PaginationButton key={n} active={n === page} onClick={() => onChange(n)}>
             {n}
           </PaginationButton>
         ))}
-        <PaginationButton
-          label="Следующая страница"
-          disabled={page >= pages}
-          onClick={() => onChange(Math.min(pages, page + 1))}
-          icon="next"
-        />
+        <PaginationButton label="Следующая страница" disabled={page >= pages} onClick={() => onChange(Math.min(pages, page + 1))} icon="next" />
       </div>
     </div>
   );
@@ -491,15 +437,13 @@ function PaginationButton({
 
 function CommentsLink({ href }: { href: string }) {
   return (
-    <Link
-      href={href}
-      className="comments-link"
-      aria-label="Открыть комментарии к публикации"
-    >
+    <Link href={href} className="comments-link" aria-label="Открыть комментарии к публикации">
       <ChevronRight className="h-5 w-5" />
     </Link>
   );
 }
+
+/* ===== Mobile UI ===== */
 
 function MobileSortMenu({
   sort,
@@ -526,9 +470,7 @@ function MobileSortMenu({
       }
     };
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-    };
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [open, onOpenChange]);
 
   const summary = sort
@@ -602,29 +544,15 @@ function MobilePostsList({
   isLoading: boolean;
   isError: boolean;
 }) {
-  if (isLoading) {
-    return <div className="mobile-posts-empty">Загрузка…</div>;
-  }
-
-  if (isError) {
-    return <div className="mobile-posts-empty text-danger">Ошибка загрузки</div>;
-  }
-
-  if (posts.length === 0) {
-    return <div className="mobile-posts-empty text-sub">Ничего не найдено</div>;
-  }
+  if (isLoading) return <div className="mobile-posts-empty">Загрузка…</div>;
+  if (isError)   return <div className="mobile-posts-empty text-danger">Ошибка загрузки</div>;
+  if (posts.length === 0) return <div className="mobile-posts-empty text-sub">Ничего не найдено</div>;
 
   return (
     <div className="mobile-post-list">
       {posts.map((post) => {
         const author = authors[post.userId];
-        return (
-          <MobilePostCard
-            key={post.id}
-            post={post}
-            author={author}
-          />
-        );
+        return <MobilePostCard key={post.id} post={post} author={author} />;
       })}
     </div>
   );
@@ -648,17 +576,9 @@ function MobilePostCard({ post, author }: { post: Post; author?: User }) {
 
       <div className="mobile-post-card__author">
         {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt={fullName}
-            width={40}
-            height={40}
-            className="h-10 w-10 rounded-full object-cover"
-          />
+          <Image src={avatarUrl} alt={fullName} width={40} height={40} className="h-10 w-10 rounded-full object-cover" />
         ) : (
-          <div className="mobile-post-card__avatar-fallback">
-            {initials || "?"}
-          </div>
+          <div className="mobile-post-card__avatar-fallback">{initials || "?"}</div>
         )}
         <div className="mobile-post-card__author-name">{fullName}</div>
       </div>
@@ -682,6 +602,8 @@ function Metric({ icon, value, label }: { icon: ReactNode; value: number; label:
     </div>
   );
 }
+
+/* ===== Utils ===== */
 
 function shuffleWithSeed<T>(array: T[], seed: number) {
   let currentIndex = array.length;
