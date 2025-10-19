@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useId,
   type ReactNode,
 } from "react";
 import {
@@ -87,7 +88,7 @@ export default function AdminsPage() {
     !isLoading &&
     !isError &&
     showMoreCount === 0 &&
-    (skip + BASE_PAGE_SIZE) < total;
+    skip + BASE_PAGE_SIZE < total;
 
   return (
     <div className="page">
@@ -109,10 +110,11 @@ export default function AdminsPage() {
 
         <div className="search-field">
           <Search className="search-field__icon" aria-hidden="true" />
-          <span className="search-field__label">Поиск по администраторам</span>
           <input
+            type="search"
             className="search-field__input"
-            placeholder="По имени или email"
+            placeholder="Поиск по администраторам"
+            aria-label="Поиск по администраторам"
             value={q}
             onChange={(e) => handleSearchChange(e.target.value)}
           />
@@ -330,11 +332,7 @@ function Pagination({
           icon="prev"
         />
         {numbers.map((n) => (
-          <PaginationButton
-            key={n}
-            active={n === page}
-            onClick={() => onChange(n)}
-          >
+          <PaginationButton key={n} active={n === page} onClick={() => onChange(n)}>
             {n}
           </PaginationButton>
         ))}
@@ -364,11 +362,14 @@ function PaginationButton({
   icon?: "prev" | "next";
   label?: string;
 }) {
-  const content = icon === "prev"
-    ? <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-    : icon === "next"
-      ? <ChevronRight className="h-4 w-4" aria-hidden="true" />
-      : children;
+  const content =
+    icon === "prev" ? (
+      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    ) : icon === "next" ? (
+      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+    ) : (
+      children
+    );
 
   return (
     <button
@@ -393,42 +394,136 @@ function RowActions({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const prevOpenRef = useRef(false);
+  const menuId = useId();
 
   useEffect(() => {
     if (!open) return;
-    const handleClick = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
         setOpen(false);
       }
     };
-    const handleKey = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClick);
-    document.addEventListener("keydown", handleKey);
+    const handleFocusIn = (event: FocusEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("focusin", handleFocusIn);
     return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("focusin", handleFocusIn);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      itemRefs.current[0]?.focus();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open && prevOpenRef.current) {
+      triggerRef.current?.focus();
+    }
+    prevOpenRef.current = open;
+  }, [open]);
+
+  const handleTriggerClick = () => {
+    setOpen((prev) => !prev);
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setOpen(true);
+    }
+  };
+
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = itemRefs.current.filter(Boolean) as HTMLButtonElement[];
+    if (items.length === 0) return;
+    const activeElement = document.activeElement as HTMLButtonElement | null;
+    const currentIndex = activeElement ? items.indexOf(activeElement) : -1;
+
+    if (event.key === "ArrowDown" || (event.key === "Tab" && !event.shiftKey)) {
+      event.preventDefault();
+      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items[nextIndex]?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowUp" || (event.key === "Tab" && event.shiftKey)) {
+      event.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items[prevIndex]?.focus();
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+    }
+  };
+
+  const registerItem = (index: number) => (node: HTMLButtonElement | null) => {
+    itemRefs.current[index] = node;
+  };
+
+  const menuLabelId = `${menuId}-trigger`;
+  const menuContentId = `${menuId}-menu`;
 
   return (
     <div className="actions-menu__wrapper" ref={containerRef}>
       <button
+        id={menuLabelId}
+        ref={triggerRef}
         type="button"
         className="actions-menu__trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((prev) => !prev)}
+        aria-controls={menuContentId}
+        aria-label="Действия администратора"
+        onClick={handleTriggerClick}
+        onKeyDown={handleTriggerKeyDown}
       >
         <MoreVertical className="h-5 w-5" aria-hidden="true" />
       </button>
       {open && (
-        <div className="actions-menu" role="menu">
+        <div
+          id={menuContentId}
+          className="actions-menu"
+          role="menu"
+          aria-labelledby={menuLabelId}
+          aria-orientation="vertical"
+          onKeyDown={handleMenuKeyDown}
+        >
           <button
+            ref={registerItem(0)}
             type="button"
             className="actions-menu__item"
             onClick={() => {
@@ -436,11 +531,13 @@ function RowActions({
               onEdit();
             }}
             role="menuitem"
+            tabIndex={-1}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-4 w-4" aria-hidden="true" />
             <span>Редактировать</span>
           </button>
           <button
+            ref={registerItem(1)}
             type="button"
             className="actions-menu__item actions-menu__item--danger"
             onClick={() => {
@@ -448,8 +545,9 @@ function RowActions({
               onDelete();
             }}
             role="menuitem"
+            tabIndex={-1}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
             <span>Удалить</span>
           </button>
         </div>
