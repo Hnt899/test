@@ -17,6 +17,9 @@ import {
   PlusCircle,
   Search,
   Trash2,
+  FileText,
+  Heart,
+  MessageCircle,
 } from "lucide-react";
 
 import UserFormModal from "@/shared/components/UserFormModal";
@@ -52,6 +55,7 @@ export default function UsersPage() {
   const { data, isLoading, isError, isFetching } = useUsers(params);
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
+  // сохраняем последний валидный total, чтобы не дёргать пагинацию при фетчинге
   const lastTotalRef = useRef(0);
   useEffect(() => {
     if (typeof data?.total === "number" && data.total > 0) {
@@ -145,6 +149,7 @@ export default function UsersPage() {
         </div>
       </div>
 
+      {/* Мобильные карточки */}
       <div className="md:hidden">
         <MobileUsersList
           users={users}
@@ -156,6 +161,7 @@ export default function UsersPage() {
         />
       </div>
 
+      {/* Таблица на десктопе */}
       <div className="table-wrap hidden md:block">
         <table className="table">
           <thead className="thead">
@@ -314,6 +320,8 @@ export default function UsersPage() {
   );
 }
 
+/* ===== UI helpers ===== */
+
 function RoleBadge({
   role,
   label,
@@ -339,7 +347,7 @@ function ActivityStat({
   label,
   value,
 }: {
-  icon: string;
+  icon: ReactNode;   // <— теперь принимаем ReactNode
   label: string;
   value: string;
 }) {
@@ -353,6 +361,8 @@ function ActivityStat({
     </div>
   );
 }
+
+/* ===== formatters ===== */
 
 function formatUserFullName(user: User) {
   const parts = [user.lastName, user.firstName, user.maidenName]
@@ -448,6 +458,8 @@ function getRoleStyle(role?: string | null) {
     fallbackLabel: capitalized,
   };
 }
+
+/* ===== Pagination ===== */
 
 function Pagination({
   page,
@@ -596,6 +608,8 @@ function RowActions({
   );
 }
 
+/* ===== Mobile list ===== */
+
 function MobileUsersList({
   users,
   statsById,
@@ -652,16 +666,14 @@ function MobileUsersList({
             <div className="mobile-user-card__name-row">
               <div className="mobile-user-card__name">{fullName}</div>
             </div>
+
+            {/* Роль — только бейдж, без слова "Роль" слева */}
             <div className="mobile-user-card__role-row">
-              <span className="mobile-user-card__role-label">Роль</span>
               <RoleBadge role={user.role} label={roleLabel} />
             </div>
 
             {email ? (
-              <a
-                href={`mailto:${email}`}
-                className="mobile-user-card__email"
-              >
+              <a href={`mailto:${email}`} className="mobile-user-card__email">
                 {email}
               </a>
             ) : (
@@ -680,9 +692,21 @@ function MobileUsersList({
             </div>
 
             <div className="mobile-user-card__activity">
-              <ActivityStat icon="📄" label="Посты" value={formatStat(stats?.posts)} />
-              <ActivityStat icon="❤️" label="Лайки" value={formatStat(stats?.likes)} />
-              <ActivityStat icon="💬" label="Комментарии" value={formatStat(stats?.comments)} />
+              <ActivityStat
+                icon={<FileText className="h-4 w-4" />}
+                label="Посты"
+                value={formatStat(stats?.posts)}
+              />
+              <ActivityStat
+                icon={<Heart className="h-4 w-4" />}
+                label="Лайки"
+                value={formatStat(stats?.likes)}
+              />
+              <ActivityStat
+                icon={<MessageCircle className="h-4 w-4" />}
+                label="Комментарии"
+                value={formatStat(stats?.comments)}
+              />
             </div>
           </div>
         );
