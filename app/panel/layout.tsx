@@ -8,6 +8,7 @@ import { Crown, Newspaper, Users } from "lucide-react";
 import MobileTopBar from "@/shared/components/MobileTopBar";
 import MobileTabBar from "@/shared/components/MobileTabBar";
 import SidebarProfileCard from "@/shared/components/SidebarProfileCard";
+import SocketEvents from "@/shared/components/SocketEvents";
 
 const navItems = [
   {
@@ -32,6 +33,8 @@ export default function PanelLayout({ children }: PropsWithChildren) {
 
   return (
     <div className="min-h-screen bg-[#E6F1FE]">
+      <SocketEvents />
+
       {/* ===== MOBILE TOP BAR ===== */}
       <div className="sm:hidden sticky top-0 z-40 bg-[#E6F1FE]/80 backdrop-blur supports-[backdrop-filter]:bg-[#E6F1FE]/60">
         <MobileTopBar />
