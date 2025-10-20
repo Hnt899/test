@@ -48,7 +48,6 @@ export default function UsersPage() {
       skip,
     };
   }, [q, limit, skip]);
-
   const { data, isLoading, isError, isFetching } = useUsers(params);
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
@@ -67,6 +66,7 @@ export default function UsersPage() {
     if (isFetching) return;
     setPage((prev) => (prev > pages ? pages : prev));
   }, [pages, isFetching]);
+
 
   const { create, update, remove } = useUserMutations();
 

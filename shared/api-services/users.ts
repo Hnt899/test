@@ -71,7 +71,7 @@ export async function createUser(payload: Omit<User, "id">) {
  */
 export async function updateUser(id: number, payload: Partial<Omit<User, "id">>) {
   const res = await fetch(`${API_BASE}/users/${id}`, {
-    method: "PUT", // у твоего тест-API PUT работает как PATCH
+    method: "PUT", // у тест-API PUT работает как PATCH
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -86,7 +86,6 @@ export async function deleteUser(id: number) {
 }
 
 // ---- дополнительные данные для пользовательских таблиц ----
-
 type UserPostsResponse = {
   posts: Post[];
   total?: number;
@@ -170,6 +169,7 @@ export async function fetchUserStats(userId: number): Promise<UserStats> {
 
 export async function fetchUsersStats(ids: number[]) {
   if (ids.length === 0) return {} as Record<number, UserStats>;
+
 
   const entries = await Promise.all(
     ids.map(async (id) => {
