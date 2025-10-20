@@ -151,6 +151,7 @@ export async function fetchUserStats(userId: number): Promise<UserStats> {
   const [postsRes, commentsRes] = await Promise.all([
     clientGet<UserPostsResponse>(`/posts/user/${userId}?${postsParams}`),
     clientGet<UserCommentsResponse>(`/comments/user/${userId}?${commentsParams}`),
+
   ]);
 
   const posts = postsRes.posts ?? [];
