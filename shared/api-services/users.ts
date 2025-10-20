@@ -71,7 +71,7 @@ export async function createUser(payload: Omit<User, "id">) {
  */
 export async function updateUser(id: number, payload: Partial<Omit<User, "id">>) {
   const res = await fetch(`${API_BASE}/users/${id}`, {
-    method: "PUT", // у твоего тест-API PUT работает как PATCH
+    method: "PUT", // у тест-API PUT работает как PATCH
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
@@ -87,90 +87,80 @@ export async function deleteUser(id: number) {
 
 // ---- дополнительные данные для пользовательских таблиц ----
 
-type UserPostsResponse = {
-  posts: Post[];
-  total?: number;
-};
+/** Ответы могут приходить как массивом, так и объектом с массивом+total */
+type UserPostsResponse =
+  | { posts?: Post[]; total?: number }
+  | Post[];
 
-type UserCommentsResponse = {
-  comments: Array<{ id: number }>;
-  total?: number;
-};
+type UserCommentsResponse =
+  | { comments?: Array<{ id: number }>; total?: number }
+  | Array<{ id: number }>;
 
-function extractNumber(value: unknown) {
-  return typeof value === "number" ? value : undefined;
+/** безопасный number */
+const num = (v: unknown): number =>
+  typeof v === "number" && Number.isFinite(v) ? v : 0;
+
+/** достаём массив из ответа независимо от формы */
+function asArray<T>(v: any, key: "posts" | "comments"): T[] {
+  if (Array.isArray(v)) return v as T[];
+  if (Array.isArray(v?.[key])) return v[key] as T[];
+  return [];
 }
 
+/** Лайки из разных возможных схем поля reactions/likes */
 function getPostLikes(post: Post) {
   if (typeof post.likes === "number") return post.likes;
 
-  const reactions = post.reactions;
-  if (typeof reactions === "number") return reactions;
-
-  if (reactions && typeof reactions === "object") {
-    const record = reactions as Record<string, unknown>;
-    return (
-      extractNumber(record.likes) ??
-      extractNumber(record.total) ??
-      extractNumber(record.upVotes) ??
-      extractNumber(record.upvotes) ??
-      0
-    );
+  const r: any = (post as any).reactions;
+  if (typeof r === "number") return r;
+  if (r && typeof r === "object") {
+    return num(r.likes) || num(r.total) || num(r.upVotes) || num(r.upvotes);
   }
 
-  return (
-    extractNumber((post as Record<string, unknown>)["likesCount"]) ??
-    extractNumber((post as Record<string, unknown>)["thumbsUp"]) ??
-    0
-  );
+  const p: any = post;
+  return num(p.likesCount) || num(p.thumbsUp);
 }
 
+/** Комментарии из разных возможных схем */
 function getPostComments(post: Post) {
   if (typeof post.comments === "number") return post.comments;
 
-  const reactions = post.reactions;
-  if (reactions && typeof reactions === "object") {
-    const record = reactions as Record<string, unknown>;
-    const fromReactions =
-      extractNumber(record.comments) ??
-      extractNumber(record.totalComments);
-    if (fromReactions != null) return fromReactions;
-  }
+  const r: any = (post as any).reactions;
+  const fromReactions = r && typeof r === "object"
+    ? (num(r.comments) || num(r.totalComments))
+    : 0;
+  if (fromReactions) return fromReactions;
 
-  return (
-    extractNumber((post as Record<string, unknown>)["commentsCount"]) ??
-    extractNumber((post as Record<string, unknown>)["commentCount"]) ??
-    0
-  );
+  const p: any = post;
+  return num(p.commentsCount) || num(p.commentCount);
 }
 
 export async function fetchUserStats(userId: number): Promise<UserStats> {
-  const postsParams = new URLSearchParams({ limit: "100" });
-  const commentsParams = new URLSearchParams({ limit: "0" });
+  // Берём ограничение 100 — обычно хватает, и total тоже приходит
+  const qs = new URLSearchParams({ limit: "100" });
 
   const [postsRes, commentsRes] = await Promise.all([
-    clientGet<UserPostsResponse>(`/posts/user/${userId}?${postsParams}`),
-    clientGet<UserCommentsResponse>(`/comments/user/${userId}?${commentsParams}`),
-
+    clientGet<UserPostsResponse>(`/users/${userId}/posts?${qs}`),
+    clientGet<UserCommentsResponse>(`/users/${userId}/comments?${qs}`),
   ]);
 
-  const posts = postsRes.posts ?? [];
-  const likes = posts.reduce((sum, post) => sum + getPostLikes(post), 0);
-  const commentsFromPosts = posts.reduce(
-    (sum, post) => sum + getPostComments(post),
-    0,
-  );
-  const directCommentsCount = commentsRes.comments?.length ?? 0;
+  const posts = asArray<Post>(postsRes, "posts");
+  const postsTotal =
+    (Array.isArray(postsRes) ? postsRes.length : num((postsRes as any)?.total)) || posts.length;
 
-  return {
-    posts: postsRes.total ?? posts.length,
-    likes,
-    comments: commentsRes.total ?? Math.max(directCommentsCount, commentsFromPosts),
-  };
+  const likesTotal = posts.reduce((acc, p) => acc + getPostLikes(p), 0);
+
+  const commentsArr = asArray<{ id: number }>(commentsRes, "comments");
+  const commentsTotal =
+    (Array.isArray(commentsRes) ? commentsRes.length : num((commentsRes as any)?.total))
+    || commentsArr.length
+    || posts.reduce((acc, p) => acc + getPostComments(p), 0); // fallback
+
+  return { posts: postsTotal, likes: likesTotal, comments: commentsTotal };
 }
 
 export async function fetchUsersStats(ids: number[]) {
-  if (ids.length === 0) return {} as Record<number, UserStats>;
+  if (!ids.length) return {} as Record<number, UserStats>;
 
   const entries = await Promise.all(
     ids.map(async (id) => {
