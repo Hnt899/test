@@ -61,12 +61,10 @@ export default function UsersPage() {
   const effectiveTotal = data?.total ?? lastTotalRef.current;
   const total = effectiveTotal;
   const pages = Math.max(1, Math.ceil(effectiveTotal / BASE_PAGE_SIZE));
-
   useEffect(() => {
     if (isFetching) return;
     setPage((prev) => (prev > pages ? pages : prev));
   }, [pages, isFetching]);
-
 
   const { create, update, remove } = useUserMutations();
 
@@ -247,7 +245,9 @@ export default function UsersPage() {
                   <td className="td align-middle text-right text-sm font-semibold text-ink">
                     {formatStat(stats?.comments)}
                   </td>
-                  <td className="td align-middle text-sm font-medium text-ink">{roleLabel}</td>
+                  <td className="td align-middle text-sm font-medium text-ink">
+                    <RoleBadge role={user.role} label={roleLabel} />
+                  </td>
                   <td className="td text-right align-middle">
                     <RowActions
                       onEdit={() => setEditUser(user)}
@@ -311,7 +311,45 @@ export default function UsersPage() {
     </div>
   );
 }
+function RoleBadge({
+  role,
+  label,
+}: {
+  role?: string | null;
+  label?: string;
+}) {
+  const { className, fallbackLabel } = getRoleStyle(role);
+  const text = label ?? fallbackLabel;
 
+  return (
+    <span
+      className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${className}`}
+      title={text}
+    >
+      {text}
+    </span>
+  );
+}
+
+function ActivityStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap">
+      <span aria-hidden="true" className="text-base">
+        {icon}
+      </span>
+      <span className="text-xs font-medium text-sub">{label}</span>
+      <span className="text-sm font-semibold text-ink">{value}</span>
+    </div>
+  );
+}
 function formatUserFullName(user: User) {
   const parts = [user.lastName, user.firstName, user.maidenName]
     .map((part) => part?.trim())
@@ -367,17 +405,44 @@ function formatGender(gender?: string) {
 }
 
 function formatRole(role?: string | null) {
-  if (!role) return "Автор";
-  if (role === "admin") return "Администратор";
-  if (role === "user") return "Автор";
-  return role;
+  return getRoleStyle(role).fallbackLabel;
 }
 
 function formatStat(value: number | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) return "—";
   return NUMBER_FORMAT.format(value);
 }
+function getRoleStyle(role?: string | null) {
+  const normalized = role?.toLowerCase();
 
+  if (normalized === "admin") {
+    return {
+      className: "bg-orange-500 text-white",
+      fallbackLabel: "Администратор",
+    };
+  }
+
+  if (normalized === "moderator") {
+    return {
+      className: "bg-blue-500 text-white",
+      fallbackLabel: "Модератор",
+    };
+  }
+
+  if (!normalized || normalized === "user" || normalized === "author") {
+    return {
+      className: "bg-gray-300 text-ink",
+      fallbackLabel: "Автор",
+    };
+  }
+
+  const capitalized = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+
+  return {
+    className: "bg-gray-300 text-ink",
+    fallbackLabel: capitalized,
+  };
+}
 function Pagination({
   page,
   pages,
@@ -545,7 +610,7 @@ function MobileUsersList({
   if (users.length === 0) return <div className="mobile-admins-empty text-sub">Ничего не найдено</div>;
 
   return (
-    <div className="mobile-admin-list">
+    <div className="flex flex-col gap-3">
       {users.map((user) => {
         const avatarUrl = typeof user.image === "string" ? user.image : "";
         const initials = userInitials(user) || formatUserName(user)[0] || "";
@@ -557,18 +622,23 @@ function MobileUsersList({
         const roleLabel = formatRole(user.role);
 
         return (
-          <div key={user.id} className="mobile-admin-card">
-            <div className="mobile-admin-card__header">
+          <div
+            key={user.id}
+            className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-card text-sm font-medium text-ink"
+          >
+            <div className="flex items-start justify-between">
               {avatarUrl ? (
                 <Image
                   src={avatarUrl}
                   alt={fullName}
                   width={48}
                   height={48}
-                  className="mobile-admin-card__avatar-image"
+                  className="h-12 w-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="mobile-admin-card__avatar-fallback">{initials || "?"}</div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-base font-semibold text-brand">
+                  {initials || "?"}
+                </div>
               )}
               <RowActions
                 onEdit={() => onEdit(user)}
@@ -576,46 +646,38 @@ function MobileUsersList({
               />
             </div>
 
-            <div className="mobile-admin-card__name">{fullName}</div>
+            <div className="flex flex-col gap-1">
+              <div className="text-base font-semibold leading-tight text-ink">{fullName}</div>
+              <RoleBadge role={user.role} label={roleLabel} />
+            </div>
 
             {email ? (
-              <a href={`mailto:${email}`} className="mobile-admin-card__email">
+              <a
+                href={`mailto:${email}`}
+                className="break-words text-sm font-medium text-brand transition-colors hover:text-brand/80"
+              >
                 {email}
               </a>
             ) : (
-              <span className="mobile-admin-card__email text-sub">—</span>
+              <span className="text-sm text-sub">—</span>
             )}
 
-            <div className="mobile-admin-card__meta">
-              <div>
-                <div className="mobile-admin-card__meta-label">Дата рождения</div>
-                <div className="mobile-admin-card__meta-value">{birthDateLabel}</div>
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="flex flex-col gap-1">
+                <span className="font-medium text-sub">Дата рождения</span>
+                <span className="text-sm font-semibold leading-tight text-ink">{birthDateLabel}</span>
               </div>
-              <div>
-                <div className="mobile-admin-card__meta-label">Пол</div>
-                <div className="mobile-admin-card__meta-value">{genderLabel}</div>
-              </div>
-            </div>
-
-            <div className="mobile-admin-card__meta mt-3">
-              <div>
-                <div className="mobile-admin-card__meta-label">Посты</div>
-                <div className="mobile-admin-card__meta-value">{formatStat(stats?.posts)}</div>
-              </div>
-              <div>
-                <div className="mobile-admin-card__meta-label">Лайки</div>
-                <div className="mobile-admin-card__meta-value">{formatStat(stats?.likes)}</div>
-              </div>
-              <div>
-                <div className="mobile-admin-card__meta-label">Комментарии</div>
-                <div className="mobile-admin-card__meta-value">{formatStat(stats?.comments)}</div>
+              <div className="flex flex-col gap-1">
+                <span className="font-medium text-sub">Пол</span>
+                <span className="text-sm font-semibold leading-tight text-ink">{genderLabel}</span>
               </div>
             </div>
 
-            <div className="mobile-admin-card__meta mt-3">
-              <div>
-                <div className="mobile-admin-card__meta-label">Роль</div>
-                <div className="mobile-admin-card__meta-value">{roleLabel}</div>
+            <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <ActivityStat icon="📄" label="Посты" value={formatStat(stats?.posts)} />
+                <ActivityStat icon="❤️" label="Лайки" value={formatStat(stats?.likes)} />
+                <ActivityStat icon="💬" label="Комментарии" value={formatStat(stats?.comments)} />
               </div>
             </div>
           </div>

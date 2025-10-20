@@ -86,6 +86,7 @@ export async function deleteUser(id: number) {
 }
 
 // ---- дополнительные данные для пользовательских таблиц ----
+
 type UserPostsResponse = {
   posts: Post[];
   total?: number;
@@ -169,7 +170,6 @@ export async function fetchUserStats(userId: number): Promise<UserStats> {
 
 export async function fetchUsersStats(ids: number[]) {
   if (ids.length === 0) return {} as Record<number, UserStats>;
-
 
   const entries = await Promise.all(
     ids.map(async (id) => {
