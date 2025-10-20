@@ -146,18 +146,24 @@ export default function PostsPage() {
     };
   }, [q, limit, skip, sort]);
 
-  const { data, isLoading, isError } = usePosts(params);
+  const { data, isLoading, isError, isFetching } = usePosts(params);
   const posts = useMemo(() => data?.posts ?? [], [data]);
-  const total = data?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / BASE_PAGE_SIZE));
+
+  const lastTotalRef = useRef(0);
+  useEffect(() => {
+    if (typeof data?.total === "number" && data.total > 0) {
+      lastTotalRef.current = data.total;
+    }
+  }, [data?.total]);
+
+  const effectiveTotal = data?.total ?? lastTotalRef.current;
+  const total = effectiveTotal;
+  const pages = Math.max(1, Math.ceil(effectiveTotal / BASE_PAGE_SIZE));
 
   useEffect(() => {
-    setPage((prev) => {
-      const next = Math.min(prev, pages);
-      if (next !== prev) setShowMoreCount(0);
-      return next;
-    });
-  }, [pages]);
+    if (isFetching) return;
+    setPage((prev) => (prev > pages ? pages : prev));
+  }, [pages, isFetching]);
 
   const sortedPosts = useMemo(() => {
     const copy = [...posts];
@@ -183,14 +189,12 @@ export default function PostsPage() {
   const authors = useAuthorsMap(sortedPosts);
   const isRandomSort = !sort && randomSeed !== null;
 
-  const handleChangePage = (nextPage: number, force = false) => {
-    const clamped = Math.min(Math.max(nextPage, 1), pages);
-    if (!force && clamped === page) return;
-    setPage(clamped);
+  const handleChangePage = (nextPage: number) => {
+    setPage(Math.min(Math.max(nextPage, 1), pages));
     setShowMoreCount(0);
   };
 
-  const resetToFirstPage = () => handleChangePage(1, true);
+  const resetToFirstPage = () => handleChangePage(1);
 
   const handleToggleSort = (field: SortField) => {
     resetToFirstPage();
