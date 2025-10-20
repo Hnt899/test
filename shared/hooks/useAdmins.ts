@@ -6,6 +6,8 @@ export function useAdmins(params: { q?: string; limit: number; skip: number }) {
   return useQuery<AdminsResponse>({
     queryKey: ["admins", params],
     queryFn: () => fetchAdmins(params),
+    placeholderData: (previousData) => previousData,
+    staleTime: 30_000,
   });
 }
 

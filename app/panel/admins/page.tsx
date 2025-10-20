@@ -42,20 +42,24 @@ export default function AdminsPage() {
     };
   }, [q, limit, skip]);
 
-  const { data, isLoading, isError } = useAdmins(params);
+  const { data, isLoading, isError, isFetching } = useAdmins(params);
   const admins = data?.users ?? [];
-  const total = data?.total ?? 0;
-  const pages = Math.max(1, Math.ceil(total / BASE_PAGE_SIZE));
+
+  const lastTotalRef = useRef(0);
+  useEffect(() => {
+    if (typeof data?.total === "number" && data.total > 0) {
+      lastTotalRef.current = data.total;
+    }
+  }, [data?.total]);
+
+  const effectiveTotal = data?.total ?? lastTotalRef.current;
+  const total = effectiveTotal;
+  const pages = Math.max(1, Math.ceil(effectiveTotal / BASE_PAGE_SIZE));
 
   useEffect(() => {
-    setPage((prev) => {
-      const next = Math.min(prev, pages);
-      if (next !== prev) {
-        setShowMoreCount(0);
-      }
-      return next;
-    });
-  }, [pages]);
+    if (isFetching) return;
+    setPage((prev) => (prev > pages ? pages : prev));
+  }, [pages, isFetching]);
 
   const { create, update, remove } = useAdminMutations();
 
@@ -64,9 +68,7 @@ export default function AdminsPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const handleChangePage = (nextPage: number) => {
-    const clamped = Math.min(Math.max(nextPage, 1), pages);
-    if (clamped === page) return;
-    setPage(clamped);
+    setPage(Math.min(Math.max(nextPage, 1), pages));
     setShowMoreCount(0);
   };
 
