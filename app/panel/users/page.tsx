@@ -48,6 +48,7 @@ export default function UsersPage() {
       skip,
     };
   }, [q, limit, skip]);
+
   const { data, isLoading, isError, isFetching } = useUsers(params);
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
@@ -61,6 +62,7 @@ export default function UsersPage() {
   const effectiveTotal = data?.total ?? lastTotalRef.current;
   const total = effectiveTotal;
   const pages = Math.max(1, Math.ceil(effectiveTotal / BASE_PAGE_SIZE));
+
   useEffect(() => {
     if (isFetching) return;
     setPage((prev) => (prev > pages ? pages : prev));
@@ -311,6 +313,7 @@ export default function UsersPage() {
     </div>
   );
 }
+
 function RoleBadge({
   role,
   label,
@@ -341,15 +344,16 @@ function ActivityStat({
   value: string;
 }) {
   return (
-    <div className="flex flex-1 items-center justify-center gap-2 whitespace-nowrap">
-      <span aria-hidden="true" className="text-base">
+    <div className="mobile-user-card__activity-item" aria-label={label} title={label}>
+      <span className="mobile-user-card__activity-icon" aria-hidden="true">
         {icon}
       </span>
-      <span className="text-xs font-medium text-sub">{label}</span>
-      <span className="text-sm font-semibold text-ink">{value}</span>
+      <span className="mobile-user-card__activity-value">{value}</span>
+      <span className="mobile-user-card__activity-label">{label}</span>
     </div>
   );
 }
+
 function formatUserFullName(user: User) {
   const parts = [user.lastName, user.firstName, user.maidenName]
     .map((part) => part?.trim())
@@ -409,9 +413,10 @@ function formatRole(role?: string | null) {
 }
 
 function formatStat(value: number | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
+  if (typeof value !== "number" || Number.isNaN(value)) return NUMBER_FORMAT.format(0);
   return NUMBER_FORMAT.format(value);
 }
+
 function getRoleStyle(role?: string | null) {
   const normalized = role?.toLowerCase();
 
@@ -443,6 +448,7 @@ function getRoleStyle(role?: string | null) {
     fallbackLabel: capitalized,
   };
 }
+
 function Pagination({
   page,
   pages,
@@ -610,7 +616,7 @@ function MobileUsersList({
   if (users.length === 0) return <div className="mobile-admins-empty text-sub">Ничего не найдено</div>;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="mobile-user-list">
       {users.map((user) => {
         const avatarUrl = typeof user.image === "string" ? user.image : "";
         const initials = userInitials(user) || formatUserName(user)[0] || "";
@@ -622,63 +628,61 @@ function MobileUsersList({
         const roleLabel = formatRole(user.role);
 
         return (
-          <div
-            key={user.id}
-            className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-4 shadow-card text-sm font-medium text-ink"
-          >
-            <div className="flex items-start justify-between">
-              {avatarUrl ? (
-                <Image
-                  src={avatarUrl}
-                  alt={fullName}
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-base font-semibold text-brand">
-                  {initials || "?"}
-                </div>
-              )}
+          <div key={user.id} className="mobile-user-card">
+            <div className="mobile-user-card__header">
+              <div className="mobile-user-card__avatar">
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt={fullName}
+                    width={48}
+                    height={48}
+                    className="mobile-user-card__avatar-image"
+                  />
+                ) : (
+                  <div className="mobile-user-card__avatar-fallback">{initials || "?"}</div>
+                )}
+              </div>
               <RowActions
                 onEdit={() => onEdit(user)}
                 onDelete={() => onDelete(user)}
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <div className="text-base font-semibold leading-tight text-ink">{fullName}</div>
+            <div className="mobile-user-card__name-row">
+              <div className="mobile-user-card__name">{fullName}</div>
+            </div>
+            <div className="mobile-user-card__role-row">
+              <span className="mobile-user-card__role-label">Роль</span>
               <RoleBadge role={user.role} label={roleLabel} />
             </div>
 
             {email ? (
               <a
                 href={`mailto:${email}`}
-                className="break-words text-sm font-medium text-brand transition-colors hover:text-brand/80"
+                className="mobile-user-card__email"
               >
                 {email}
               </a>
             ) : (
-              <span className="text-sm text-sub">—</span>
+              <span className="mobile-user-card__email text-sub">—</span>
             )}
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="flex flex-col gap-1">
-                <span className="font-medium text-sub">Дата рождения</span>
-                <span className="text-sm font-semibold leading-tight text-ink">{birthDateLabel}</span>
+            <div className="mobile-user-card__meta">
+              <div>
+                <div className="mobile-user-card__meta-label">Дата рождения</div>
+                <div className="mobile-user-card__meta-value">{birthDateLabel}</div>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="font-medium text-sub">Пол</span>
-                <span className="text-sm font-semibold leading-tight text-ink">{genderLabel}</span>
+              <div>
+                <div className="mobile-user-card__meta-label">Пол</div>
+                <div className="mobile-user-card__meta-value">{genderLabel}</div>
               </div>
             </div>
 
-            <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs">
-              <div className="flex items-center justify-between gap-3">
-                <ActivityStat icon="📄" label="Посты" value={formatStat(stats?.posts)} />
-                <ActivityStat icon="❤️" label="Лайки" value={formatStat(stats?.likes)} />
-                <ActivityStat icon="💬" label="Комментарии" value={formatStat(stats?.comments)} />
-              </div>
+            <div className="mobile-user-card__activity">
+              <ActivityStat icon="📄" label="Посты" value={formatStat(stats?.posts)} />
+              <ActivityStat icon="❤️" label="Лайки" value={formatStat(stats?.likes)} />
+              <ActivityStat icon="💬" label="Комментарии" value={formatStat(stats?.comments)} />
             </div>
           </div>
         );
