@@ -145,9 +145,13 @@ function getPostComments(post: Post) {
 }
 
 export async function fetchUserStats(userId: number): Promise<UserStats> {
+  const postsParams = new URLSearchParams({ limit: "100" });
+  const commentsParams = new URLSearchParams({ limit: "0" });
+
   const [postsRes, commentsRes] = await Promise.all([
-    clientGet<UserPostsResponse>(`/users/${userId}/posts`),
-    clientGet<UserCommentsResponse>(`/users/${userId}/comments`),
+    clientGet<UserPostsResponse>(`/posts/user/${userId}?${postsParams}`),
+    clientGet<UserCommentsResponse>(`/comments/user/${userId}?${commentsParams}`),
+
   ]);
 
   const posts = postsRes.posts ?? [];
@@ -166,6 +170,8 @@ export async function fetchUserStats(userId: number): Promise<UserStats> {
 }
 
 export async function fetchUsersStats(ids: number[]) {
+  if (ids.length === 0) return {} as Record<number, UserStats>;
+
   const entries = await Promise.all(
     ids.map(async (id) => {
       try {
