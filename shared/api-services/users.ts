@@ -71,7 +71,7 @@ export async function createUser(payload: Omit<User, "id">) {
  */
 export async function updateUser(id: number, payload: Partial<Omit<User, "id">>) {
   const res = await fetch(`${API_BASE}/users/${id}`, {
-    method: "PUT", // у твоего тест-API PUT работает как PATCH
+    method: "PUT", // у тест-API PUT работает как PATCH
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
