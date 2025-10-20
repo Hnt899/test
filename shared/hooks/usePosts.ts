@@ -11,5 +11,7 @@ export function usePosts(params: {
   return useQuery({
     queryKey: ["posts", params],
     queryFn: () => fetchPosts(params),
+    placeholderData: (previousData) => previousData,
+    staleTime: 30_000,
   });
 }

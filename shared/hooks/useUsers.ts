@@ -6,6 +6,8 @@ export function useUsers(params: { q?: string; limit: number; skip: number }) {
   return useQuery({
     queryKey: ["users", params],
     queryFn: () => fetchUsers(params),
+    placeholderData: (previousData) => previousData,
+    staleTime: 30_000,
   });
 }
 

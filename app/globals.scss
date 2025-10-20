@@ -101,6 +101,27 @@ html, body { @apply min-h-screen bg-bg text-ink antialiased; }
   .mobile-admin-card__meta-label { @apply text-xs font-medium text-sub; }
   .mobile-admin-card__meta-value { @apply mt-1 text-sm font-semibold text-ink leading-tight; }
 
+  /* Мобильные пользователи */
+  .mobile-user-list { @apply flex flex-col gap-3; }
+  .mobile-user-card { @apply space-y-3 rounded-2xl border border-line bg-white p-4 shadow-card text-sm font-medium text-ink; }
+  .mobile-user-card__header { @apply flex items-start justify-between; }
+  .mobile-user-card__avatar { @apply flex h-12 w-12 flex-shrink-0; }
+  .mobile-user-card__avatar-image { @apply h-12 w-12 rounded-full object-cover; }
+  .mobile-user-card__avatar-fallback { @apply flex h-12 w-12 items-center justify-center rounded-full bg-brand/10 text-base font-semibold text-brand; }
+  .mobile-user-card__name-row { @apply flex flex-col gap-1; }
+  .mobile-user-card__name { @apply text-base font-semibold leading-tight text-ink; }
+  .mobile-user-card__role-row { @apply flex items-center gap-2; }
+  .mobile-user-card__role-label { @apply text-xs font-medium text-sub; }
+  .mobile-user-card__email { @apply block text-sm font-medium text-brand transition-colors hover:text-brand/80 break-words; }
+  .mobile-user-card__meta { @apply grid grid-cols-2 gap-4; }
+  .mobile-user-card__meta-label { @apply text-xs font-medium text-sub; }
+  .mobile-user-card__meta-value { @apply mt-1 text-sm font-semibold leading-tight text-ink; }
+  .mobile-user-card__activity { @apply grid grid-cols-3 gap-3; }
+  .mobile-user-card__activity-item { @apply flex flex-col items-center gap-1 text-center; }
+  .mobile-user-card__activity-icon { @apply text-base; }
+  .mobile-user-card__activity-value { @apply text-sm font-semibold text-ink; }
+  .mobile-user-card__activity-label { @apply text-xs font-medium text-sub; }
+
   /* Мобильные комментарии */
   .mobile-comments-empty { @apply rounded-2xl border border-dashed border-line/70 bg-white px-4 py-10 text-center text-sm font-medium; }
   .mobile-comment-list   { @apply flex flex-col gap-3; }
