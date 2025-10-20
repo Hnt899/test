@@ -48,7 +48,6 @@ export default function UsersPage() {
       skip,
     };
   }, [q, limit, skip]);
-
   const { data, isLoading, isError, isFetching } = useUsers(params);
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
@@ -62,7 +61,6 @@ export default function UsersPage() {
   const effectiveTotal = data?.total ?? lastTotalRef.current;
   const total = effectiveTotal;
   const pages = Math.max(1, Math.ceil(effectiveTotal / BASE_PAGE_SIZE));
-
   useEffect(() => {
     if (isFetching) return;
     setPage((prev) => (prev > pages ? pages : prev));
@@ -313,7 +311,6 @@ export default function UsersPage() {
     </div>
   );
 }
-
 function RoleBadge({
   role,
   label,
@@ -353,7 +350,6 @@ function ActivityStat({
     </div>
   );
 }
-
 function formatUserFullName(user: User) {
   const parts = [user.lastName, user.firstName, user.maidenName]
     .map((part) => part?.trim())
@@ -416,7 +412,6 @@ function formatStat(value: number | undefined) {
   if (typeof value !== "number" || Number.isNaN(value)) return "—";
   return NUMBER_FORMAT.format(value);
 }
-
 function getRoleStyle(role?: string | null) {
   const normalized = role?.toLowerCase();
 
@@ -448,7 +443,6 @@ function getRoleStyle(role?: string | null) {
     fallbackLabel: capitalized,
   };
 }
-
 function Pagination({
   page,
   pages,
