@@ -84,7 +84,7 @@ NEXT_PUBLIC_DEV_LOGIN=
 
 📜 Скрипты
 
-npm run dev — запуск Socket.IO сервера и Next.js (Turbopack)
+npm run dev — запуск Socket.IO сервера и Next.js (Turbopack) (быстрый запуск проекта после установки зависимостей)
 
 npm run build — production-сборка
 
